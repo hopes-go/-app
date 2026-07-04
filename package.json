@@ -1,0 +1,16 @@
+{
+  "name": "hopes-go-app",
+  "version": "1.0.0",
+  "description": "Hope's & Go storefront, employee dashboard, admin center, and Stripe checkout prototype.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.7",
+    "express": "^4.18.3",
+    "stripe": "^17.5.0",
+    "@supabase/supabase-js": "^2.45.4",
+    "twilio": "^5.4.5"
+  }
+}
