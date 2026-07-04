@@ -131,9 +131,23 @@
               <label for="customerEmail">Email</label>
               <input id="customerEmail" type="email" placeholder="Email address" />
               <label for="pickupAddress">Default pickup</label>
-              <input id="pickupAddress" type="text" placeholder="Store or pickup address" />
+              <input id="pickupAddress" type="text" placeholder="Store or pickup address" list="locationSuggestions" />
               <label for="deliveryAddress">Default delivery</label>
-              <input id="deliveryAddress" type="text" placeholder="Delivery address" />
+              <input id="deliveryAddress" type="text" placeholder="Delivery address" list="locationSuggestions" />
+              <datalist id="locationSuggestions">
+                <option value="Burlington, IA"></option>
+                <option value="West Burlington, IA"></option>
+                <option value="Hy-Vee, 3140 Agency St, Burlington, IA"></option>
+                <option value="Walmart Supercenter, 324 W Agency Rd, West Burlington, IA"></option>
+                <option value="Target, West Burlington, IA"></option>
+                <option value="Downtown Burlington, IA"></option>
+                <option value="Great River Health, West Burlington, IA"></option>
+                <option value="Fort Madison, IA"></option>
+                <option value="Mediapolis, IA"></option>
+                <option value="Mount Pleasant, IA"></option>
+                <option value="Danville, IA"></option>
+                <option value="New London, IA"></option>
+              </datalist>
               <label for="customerNotes">Saved notes</label>
               <textarea id="customerNotes" placeholder="Gate code, substitutions, delivery notes"></textarea>
               <button class="checkout-button profile-save" type="submit">Save profile</button>

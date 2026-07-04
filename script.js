@@ -222,6 +222,7 @@ const cartTotal = document.querySelector("#cartTotal");
 const cartCount = document.querySelector("#cartCount");
 const enableNotifications = document.querySelector("#enableNotifications");
 const roleNavItems = document.querySelectorAll("[data-role-nav]");
+const storeShell = document.querySelector(".store-shell");
 const staffLoginToggle = document.querySelector("#staffLoginToggle");
 const staffLoginPanel = document.querySelector("#staffLoginPanel");
 const customerLoginForm = document.querySelector("#customerLoginForm");
@@ -655,15 +656,14 @@ async function startStripeCheckout() {
       body: JSON.stringify(payload),
     });
 
+    const data = await response.json();
     if (!response.ok) {
-      throw new Error("Checkout could not be started.");
+      throw new Error(data.error || "Checkout could not be started.");
     }
 
-    const data = await response.json();
     window.location.href = data.url;
   } catch (error) {
-    checkoutStatus.textContent =
-      "Stripe checkout needs the app server running. Start it with npm start, then try again.";
+    checkoutStatus.textContent = `Stripe checkout could not open: ${error.message}`;
     checkoutButton.disabled = false;
   }
 }

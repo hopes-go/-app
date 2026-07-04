@@ -1175,8 +1175,11 @@ th {
 
 @media (max-width: 720px) {
   .staff-login-toggle {
-    position: static;
-    justify-self: center;
+    top: 12px;
+    right: 12px;
+    min-height: 36px;
+    padding: 0 10px;
+    font-size: 0.82rem;
   }
 
   .topbar {
