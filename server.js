@@ -7,10 +7,10 @@ require("dotenv").config();
 require("dotenv").config({ path: path.join(__dirname, "config", ".env"), override: false });
 
 const app = express();
-const stripe = Stripe(process.env.STRIPE_SECRET_KEY || "");
 const port = process.env.PORT || 3000;
 const baseUrl = process.env.APP_BASE_URL || `http://localhost:${port}`;
 const ownerPhoneNumber = process.env.OWNER_PHONE_NUMBER || "+13195944964";
+let stripeClient = null;
 const twilioClient =
   process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN
     ? twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN)
@@ -40,6 +40,14 @@ app.use(express.static(__dirname));
 
 function toCents(amount) {
   return Math.max(0, Math.round(amount * 100));
+}
+
+function getStripeClient() {
+  if (!process.env.STRIPE_SECRET_KEY) return null;
+  if (!stripeClient) {
+    stripeClient = Stripe(process.env.STRIPE_SECRET_KEY);
+  }
+  return stripeClient;
 }
 
 function getDiscountAmount(subtotal, code) {
@@ -94,7 +102,8 @@ app.post("/send-verification-code", async (req, res) => {
 });
 
 app.post("/create-checkout-session", async (req, res) => {
-  if (!process.env.STRIPE_SECRET_KEY) {
+  const stripe = getStripeClient();
+  if (!stripe) {
     return res.status(500).json({ error: "Missing STRIPE_SECRET_KEY." });
   }
 
