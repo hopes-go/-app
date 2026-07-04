@@ -7,7 +7,6 @@ require("dotenv").config();
 require("dotenv").config({ path: path.join(__dirname, "config", ".env"), override: false });
 
 const app = express();
-const stripe = Stripe(process.env.STRIPE_SECRET_KEY || "");
 const port = process.env.PORT || 3000;
 const baseUrl = process.env.APP_BASE_URL || `http://localhost:${port}`;
 const ownerPhoneNumber = process.env.OWNER_PHONE_NUMBER || "+13195944964";
