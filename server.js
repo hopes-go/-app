@@ -26,17 +26,27 @@ const defaultOwnerScheduleDays = {
   Sunday: [{ start: "13:00", end: "00:00" }],
 };
 const operationsStatePath = path.join(__dirname, ".data", "operations-state.json");
+const defaultDriverSchedules = {
+  "Landyn Gavin": {
+    days: {
+      Monday: [{ start: "15:00", end: "00:00" }],
+      Thursday: [{ start: "15:00", end: "00:00" }],
+    },
+    updatedAt: "",
+  },
+};
 let stripeClient = null;
 const twilioClient =
   process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN
     ? twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN)
     : null;
+const twilioMessagingServiceSid = String(process.env.TWILIO_MESSAGING_SERVICE_SID || "").trim();
 
 const defaultOperationsState = {
   ownerOverride: "Auto",
   ownerOverrideUpdatedAt: "",
   drivers: {},
-  driverSchedules: {},
+  driverSchedules: defaultDriverSchedules,
   alerts: [],
   clockInAlertKeys: [],
 };
@@ -48,12 +58,12 @@ function loadOperationsState() {
       ...defaultOperationsState,
       ...saved,
       drivers: saved.drivers || {},
-      driverSchedules: saved.driverSchedules || {},
+      driverSchedules: { ...defaultDriverSchedules, ...(saved.driverSchedules || {}) },
       alerts: Array.isArray(saved.alerts) ? saved.alerts : [],
       clockInAlertKeys: Array.isArray(saved.clockInAlertKeys) ? saved.clockInAlertKeys : [],
     };
   } catch {
-    return { ...defaultOperationsState, drivers: {}, driverSchedules: {}, alerts: [], clockInAlertKeys: [] };
+    return { ...defaultOperationsState, drivers: {}, driverSchedules: defaultDriverSchedules, alerts: [], clockInAlertKeys: [] };
   }
 }
 
@@ -780,6 +790,7 @@ const restaurantStatePath = path.join(__dirname, ".data", "restaurant-state.json
 const restaurantOrdersPath = path.join(__dirname, ".data", "restaurant-orders.json");
 const restaurantSessions = new Map();
 const adminRestaurantSessions = new Map();
+const driverSessions = new Map();
 
 function hashRestaurantPassword(password, salt = crypto.randomBytes(16).toString("hex")) {
   const hash = crypto.scryptSync(String(password), salt, 64).toString("hex");
@@ -933,16 +944,18 @@ function normalizePhoneNumber(phone) {
 }
 
 async function sendTextMessage(to, message) {
-  if (!twilioClient || !process.env.TWILIO_FROM_NUMBER || !to) {
+  if (!twilioClient || (!twilioMessagingServiceSid && !process.env.TWILIO_FROM_NUMBER) || !to) {
     console.log(`SMS not sent. Configure Twilio to text ${to || "recipient"}: ${message}`);
     return false;
   }
 
-  await twilioClient.messages.create({
+  const payload = {
     to: normalizePhoneNumber(to),
-    from: process.env.TWILIO_FROM_NUMBER,
     body: message,
-  });
+  };
+  if (twilioMessagingServiceSid) payload.messagingServiceSid = twilioMessagingServiceSid;
+  else payload.from = process.env.TWILIO_FROM_NUMBER;
+  await twilioClient.messages.create(payload);
   return true;
 }
 
@@ -969,7 +982,7 @@ function getOperationsSnapshot(date = new Date()) {
     availableDriverCount: availableDrivers.length,
     bookingAvailable: availableDrivers.length > 0,
     alerts: (operationsState.alerts || []).slice(0, 50),
-    smsConfigured: Boolean(twilioClient && process.env.TWILIO_FROM_NUMBER),
+    smsConfigured: Boolean(twilioClient && (twilioMessagingServiceSid || process.env.TWILIO_FROM_NUMBER)),
     checkedAt: date.toISOString(),
   };
 }
@@ -1250,6 +1263,11 @@ window.HOPES_GO_STRIPE_PUBLISHABLE_KEY=${JSON.stringify(
     process.env.STRIPE_PUBLISHABLE_KEY || process.env.STRIPE_PUBLIC_KEY || ""
   )};
 window.HOPES_GO_CUSTOMER_TEST_MODE=false;
+window.HOPES_GO_NON_PARTNER_PAYMENTS=${JSON.stringify({
+    cashApp: process.env.NON_PARTNER_CASHAPP_URL || "https://cash.app/$hopesgo",
+    paypal: process.env.NON_PARTNER_PAYPAL_URL || "https://paypal.biz/HopesandGo",
+    venmo: process.env.NON_PARTNER_VENMO_URL || "https://venmo.com/u/hopes_go",
+  })};
 `);
 });
 
@@ -1267,15 +1285,77 @@ app.post("/api/admin/restaurant-login", (req, res) => {
   const username = String(req.body.username || "").trim().toLowerCase();
   const accessCode = String(req.body.accessCode || "");
   const allowedLogins = [
-    { username: String(process.env.HOPES_GO_ADMIN_USERNAME || "hope_admin").toLowerCase(), code: String(process.env.HOPES_GO_ADMIN_ACCESS_CODE || "Admin18909!") },
-    { username: String(process.env.HOPES_GO_OWNER_USERNAME || "hope_go").toLowerCase(), code: String(process.env.HOPES_GO_OWNER_ACCESS_CODE || "Milo_Go18909!") },
+    { username: String(process.env.HOPES_GO_ADMIN_USERNAME || "").toLowerCase(), code: String(process.env.HOPES_GO_ADMIN_ACCESS_CODE || ""), role: "admin", name: "Hope" },
+    { username: String(process.env.HOPES_GO_OWNER_USERNAME || "").toLowerCase(), code: String(process.env.HOPES_GO_OWNER_ACCESS_CODE || ""), role: "owner", name: "Hope" },
   ];
-  if (!allowedLogins.some((login) => login.username === username && login.code === accessCode)) {
+  const matchedLogin = allowedLogins.find((login) => login.username && login.code && login.username === username && login.code === accessCode);
+  if (!matchedLogin) {
     return res.status(401).json({ error: "Restaurant-site admin access was not approved." });
   }
   const token = crypto.randomBytes(32).toString("hex");
   adminRestaurantSessions.set(token, { expiresAt: Date.now() + 8 * 60 * 60 * 1000 });
-  return res.json({ token });
+  return res.json({ token, role: matchedLogin.role, name: matchedLogin.name });
+});
+
+function getConfiguredDrivers() {
+  try {
+    const parsed = JSON.parse(process.env.HOPES_GO_DRIVER_ACCOUNTS_JSON || "[]");
+    return Array.isArray(parsed) ? parsed.filter((driver) => driver && driver.username && driver.passwordHash) : [];
+  } catch {
+    return [];
+  }
+}
+
+function verifyDriverPassword(password, storedHash) {
+  const [algorithm, saltHex, digestHex] = String(storedHash || "").split("$");
+  if (algorithm !== "scrypt" || !saltHex || !digestHex) return false;
+  try {
+    const digest = crypto.scryptSync(String(password || ""), Buffer.from(saltHex, "hex"), 64);
+    const expected = Buffer.from(digestHex, "hex");
+    return expected.length === digest.length && crypto.timingSafeEqual(digest, expected);
+  } catch {
+    return false;
+  }
+}
+
+function publicDriver(driver) {
+  return {
+    username: String(driver.username),
+    name: String(driver.name || driver.username),
+    phone: normalizePhoneNumber(driver.phone || ""),
+    role: "driver",
+  };
+}
+
+app.post("/api/driver/login", (req, res) => {
+  const username = String(req.body.username || "").trim().toLowerCase();
+  const password = String(req.body.password || "");
+  const driver = getConfiguredDrivers().find((item) => String(item.username).toLowerCase() === username);
+  if (!driver || !verifyDriverPassword(password, driver.passwordHash)) {
+    return res.status(401).json({ error: "The driver login is not correct." });
+  }
+  const token = crypto.randomBytes(32).toString("hex");
+  driverSessions.set(token, { username: String(driver.username), expiresAt: Date.now() + 12 * 60 * 60 * 1000 });
+  return res.json({ token, driver: publicDriver(driver) });
+});
+
+app.post("/api/notify-driver", async (req, res) => {
+  const name = String(req.body.name || "").trim();
+  const message = String(req.body.message || "").trim().slice(0, 1200);
+  if (!name || !message) return res.status(400).json({ error: "Driver name and message are required." });
+  const driver = getConfiguredDrivers().find((item) => String(item.name || "").toLowerCase() === name.toLowerCase());
+  if (!driver || !driver.phone) return res.status(404).json({ error: "Driver phone is not configured." });
+  const scheduledDriver = getEffectiveDriverStatuses().find((item) => item.name.toLowerCase() === name.toLowerCase());
+  if (!scheduledDriver || !scheduledDriver.clockedIn) {
+    return res.status(409).json({ error: "Driver is not scheduled and clocked in. No text was sent." });
+  }
+  try {
+    const smsSent = await sendTextMessage(driver.phone, `Hope's & Go: ${message} Reply STOP to opt out or HELP for help.`);
+    return res.json({ ok: true, smsSent });
+  } catch (error) {
+    console.error("Driver SMS failed:", error.message);
+    return res.status(502).json({ error: "Driver notification could not be sent." });
+  }
 });
 
 app.get("/api/admin/restaurants", requireRestaurantAdmin, (_req, res) => {
@@ -1535,6 +1615,8 @@ app.post("/create-checkout-session", async (req, res) => {
           membership_name: req.body.membershipName || "",
           membership_savings: String(membershipSavings),
           tip: String(tip),
+          driver_name: String(req.body.driverName || ""),
+          driver_tip_transfer_status: tip > 0 ? "pending-driver-assignment" : "none",
           tax: String(tax),
           tax_rate: String(taxRate),
           additional_stop_address: req.body.additionalStop?.address || "",
