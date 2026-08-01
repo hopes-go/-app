@@ -128,6 +128,71 @@ create table if not exists public.order_proofs (
   created_at timestamptz not null default now()
 );
 
+create table if not exists public.restaurants (
+  id uuid primary key default gen_random_uuid(),
+  auth_user_id uuid unique,
+  store_name text not null,
+  description text,
+  address text,
+  phone text,
+  logo_url text,
+  cover_image_url text,
+  stripe_account_id text unique,
+  stripe_ready boolean not null default false,
+  food_tax_rate numeric(7, 6) not null default 0.07,
+  active boolean not null default true,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.restaurant_hours (
+  id uuid primary key default gen_random_uuid(),
+  restaurant_id uuid not null references public.restaurants(id) on delete cascade,
+  day_of_week smallint not null check (day_of_week between 0 and 6),
+  display_hours text not null default 'Closed',
+  unique (restaurant_id, day_of_week)
+);
+
+create table if not exists public.restaurant_menu_items (
+  id uuid primary key default gen_random_uuid(),
+  restaurant_id uuid not null references public.restaurants(id) on delete cascade,
+  name text not null,
+  description text,
+  category text not null default 'Menu',
+  price numeric(10, 2) not null check (price >= 0),
+  image_url text,
+  active boolean not null default true,
+  sort_order integer not null default 0,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.restaurant_weekly_deals (
+  id uuid primary key default gen_random_uuid(),
+  restaurant_id uuid not null references public.restaurants(id) on delete cascade,
+  title text not null,
+  description text,
+  active boolean not null default true,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+alter table public.orders add column if not exists restaurant_id uuid references public.restaurants(id);
+alter table public.orders add column if not exists restaurant_food_subtotal numeric(10, 2) not null default 0;
+alter table public.orders add column if not exists restaurant_food_tax numeric(10, 2) not null default 0;
+alter table public.orders add column if not exists restaurant_transfer_amount numeric(10, 2) not null default 0;
+
+create table if not exists public.restaurant_order_items (
+  id uuid primary key default gen_random_uuid(),
+  order_id uuid not null references public.orders(id) on delete cascade,
+  restaurant_id uuid not null references public.restaurants(id),
+  menu_item_id uuid references public.restaurant_menu_items(id),
+  item_name text not null,
+  quantity integer not null check (quantity > 0),
+  unit_price numeric(10, 2) not null,
+  line_total numeric(10, 2) not null
+);
+
 insert into public.services (id, name, category, price) values
   (1, 'Pickup & Delivery', 'Main Services', 10),
   (2, 'Shop & Deliver', 'Main Services', 15),
@@ -164,6 +229,11 @@ alter table public.driver_availability enable row level security;
 alter table public.driver_pay_records enable row level security;
 alter table public.mileage_logs enable row level security;
 alter table public.order_proofs enable row level security;
+alter table public.restaurants enable row level security;
+alter table public.restaurant_hours enable row level security;
+alter table public.restaurant_menu_items enable row level security;
+alter table public.restaurant_weekly_deals enable row level security;
+alter table public.restaurant_order_items enable row level security;
 
 -- The server uses SUPABASE_SERVICE_ROLE_KEY for trusted writes.
 -- Add user-specific RLS policies after real Supabase Auth roles are finalized.

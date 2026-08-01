@@ -3,16 +3,29 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#e73383" />
+    <meta name="theme-color" content="#d31f6b" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-title" content="Hope's & Go" />
     <title>Hope's & Go</title>
     <link rel="manifest" href="manifest.json" />
+    <link rel="icon" href="assets/favicon.png" type="image/png" />
     <link rel="apple-touch-icon" href="assets/logo.png" />
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
     <main>
+      <div class="owner-site-switcher" id="ownerSiteSwitcher" aria-hidden="true">
+        <button class="owner-menu-button admin-preview-open" id="adminPreviewOpen" type="button" data-admin-preview-open>Preview</button>
+        <div class="owner-menu-group">
+          <button class="owner-menu-button" id="ownerMenuToggle" type="button" aria-expanded="false">Sites</button>
+          <div class="owner-menu-panel" id="ownerMenuPanel">
+            <button type="button" data-owner-view="storefront">Customer site</button>
+            <button type="button" data-owner-view="employee">Driver app</button>
+            <button type="button" data-owner-view="admin">Admin center</button>
+            <button type="button" id="adminRestaurantSitesButton">Restaurant sites</button>
+          </div>
+        </div>
+      </div>
       <section class="view active" id="login" aria-labelledby="customerLoginHeading">
         <section class="login-hero">
           <button class="staff-login-toggle" id="staffLoginToggle" type="button">Driver/Admin Login</button>
@@ -52,6 +65,14 @@
                 two-step verification, order updates, and service request notifications. Message and
                 data rates may apply. Reply STOP to opt out or HELP for help.
               </p>
+              <label class="save-login-option login-only-field">
+                <input id="saveCustomerLogin" type="checkbox" checked />
+                Keep me signed in
+              </label>
+              <div class="social-login-actions">
+                <button class="secondary-admin-action" type="button" data-social-login="google">Continue with Google</button>
+                <button class="secondary-admin-action" type="button" data-social-login="apple">Continue with Apple / Face ID</button>
+              </div>
               <button class="checkout-button" id="customerLoginSubmit" type="submit">Create account</button>
               <div class="verification-panel" id="customerVerificationPanel" aria-hidden="true">
                 <p id="customerVerificationMessage"></p>
@@ -66,7 +87,7 @@
 
           <div class="staff-login-panel" id="staffLoginPanel" aria-hidden="true">
             <form class="login-panel" id="driverRoleLoginForm">
-              <h2>Driver</h2>
+              <h2>Driver/Admin Login</h2>
               <label>
                 Username
                 <input id="driverRoleLoginName" type="text" placeholder="Username" required />
@@ -75,66 +96,351 @@
                 Access code
                 <input id="driverRoleAccessCode" type="password" placeholder="Assigned access code" required />
               </label>
-              <button class="checkout-button" type="submit">Open driver app</button>
+              <button class="checkout-button" type="submit">Log in</button>
               <p class="checkout-status" id="driverRoleLoginStatus"></p>
             </form>
-
-            <form class="login-panel" id="adminLoginForm">
-              <h2>Admin</h2>
+            <form class="login-panel restaurant-login-panel" id="restaurantLoginForm">
+              <h2>Restaurant Login</h2>
+              <p>Manage your store information, hours, weekly deals, pictures, menu, and prices.</p>
               <label>
-                Username
-                <input id="adminLoginName" type="text" placeholder="Username" required />
+                Restaurant username
+                <input id="restaurantLoginName" type="text" placeholder="Restaurant username" autocomplete="username" required />
               </label>
               <label>
-                Access code
-                <input id="adminAccessCode" type="password" placeholder="Assigned admin code" required />
+                Password
+                <input id="restaurantLoginPassword" type="password" placeholder="Password" autocomplete="current-password" required />
               </label>
-              <button class="checkout-button" type="submit">Open admin center</button>
-              <p class="checkout-status" id="adminLoginStatus"></p>
+              <button class="checkout-button" type="submit">Open Restaurant Dashboard</button>
+              <p class="checkout-status" id="restaurantLoginStatus"></p>
             </form>
           </div>
         </section>
       </section>
 
       <section class="view" id="storefront" aria-labelledby="storefront-title">
+        <button class="customer-menu-button" id="customerMenuToggle" type="button" aria-expanded="false">Menu</button>
+        <div class="customer-cart-summary" id="customerCartSummary" hidden>
+          <button class="cart-button customer-resume-cart" id="resumeCartButton" type="button" aria-label="Open current cart">
+            <span class="cart-icon" aria-hidden="true">Cart</span>
+            <span class="resume-cart-copy">
+              <strong id="resumeCartTitle">Cart</strong>
+              <small id="resumeCartStep">Step 1: Choose a main service</small>
+            </span>
+            <span class="resume-cart-count" id="resumeCartCount">0</span>
+          </button>
+          <div class="customer-running-total" aria-live="polite" aria-label="Current request total">
+            <span>Current total</span>
+            <strong id="customerRunningTotal">$0.00</strong>
+          </div>
+        </div>
+        <button class="customer-page-help-button" id="customerPageHelpButton" type="button" aria-label="Help for this page" title="Help for this page">?</button>
+        <section class="customer-menu-panel" id="customerMenuPanel" aria-hidden="true">
+          <button class="customer-menu-status" id="customerMenuMembershipStatus" type="button" data-customer-menu-action="membership-dashboard">No membership active</button>
+          <button type="button" data-customer-menu-action="home">Back to home screen</button>
+          <button type="button" data-customer-menu-action="profile">Profile</button>
+          <button type="button" data-customer-menu-action="orders">Past orders</button>
+          <button type="button" data-customer-menu-action="payments">Saved cards/banks</button>
+          <button type="button" data-customer-menu-action="memberships">Memberships</button>
+          <a href="assets/terms-of-service.pdf" target="_blank" rel="noreferrer">Terms of service</a>
+          <a href="https://hopesgo-my.sharepoint.com/:b:/g/personal/hope_go_hopesgo_onmicrosoft_com/IQCaek7dRyByQ6nfGjOLqmR5ARq9OjqUrBybqrUL3Aglmkc?e=geY1bw" target="_blank" rel="noreferrer">Privacy policy</a>
+          <a href="mailto:helping_hands@hopes-go.com">Customer support</a>
+          <button type="button" id="customerLogout">Log out</button>
+        </section>
         <section class="hero">
-          <img src="assets/hero-business.png" alt="Hope's & Go delivery service beside a branded car" />
+          <img src="assets/hero-business.png" alt="Hope's & Go delivery service beside a branded car" loading="lazy" decoding="async" />
           <div class="hero-copy">
-            <img class="hero-logo" src="assets/logo.png" alt="Hope's & Go" />
-            <p class="eyebrow">Rides. Errands. Delivered with care.</p>
+            <img class="hero-logo" src="assets/logo.png" alt="Hope's & Go" loading="lazy" decoding="async" />
+            <p class="hero-brand">Hope's &amp; Go</p>
+            <p class="eyebrow">Errands. Deliveries. Handled with care.</p>
             <h1 id="storefront-title">When life gets busy, we go.</h1>
             <p>
               Choose a service, add the details, and submit your request. Your card is only charged
               after Hope's & Go accepts the order.
             </p>
             <div class="hero-actions">
-              <a href="#services" class="primary-action">Start a request</a>
-              <a href="assets/terms-of-service.pdf" class="secondary-action" target="_blank" rel="noreferrer">
-                Terms of service
-              </a>
+              <button class="primary-action" id="startRequestButton" type="button">Start a request</button>
+              <button class="primary-action restaurant-marketplace-open" id="openRestaurantsButton" type="button">Restaurant</button>
+              <button class="secondary-action" id="openMembershipsButton" type="button">Memberships</button>
             </div>
+            <p class="customer-service-status" id="customerServiceAvailability" aria-live="polite">Checking driver availability...</p>
           </div>
         </section>
 
-        <section class="store-shell" id="services">
-          <aside class="filters" aria-label="Service filters">
-            <h2>Request details</h2>
-            <form class="profile-form" id="profileForm">
-              <div class="section-heading compact mini-heading">
-                <h3>Customer profile</h3>
-                <span id="profileStatus">Not saved</span>
+        <section class="availability-gate-modal" id="availabilityGateModal" role="dialog" aria-modal="true" aria-labelledby="availabilityGateTitle" hidden>
+          <div class="availability-gate-card">
+            <button class="availability-gate-close" id="availabilityGateClose" type="button" aria-label="Close driver availability message">&times;</button>
+            <p class="eyebrow">Booking unavailable</p>
+            <h2 id="availabilityGateTitle">No drivers are currently available.</h2>
+            <p>Please try again during business hours. If it is during business hours, please call us!</p>
+            <a class="call-operations-button" href="tel:3198208454" aria-label="Call Hope's &amp; Go at 319-820-8454">Call</a>
+          </div>
+        </section>
+
+        <section class="availability-gate-modal shopping-price-modal" id="shoppingPriceModal" role="dialog" aria-modal="true" aria-labelledby="shoppingPriceModalTitle" hidden>
+          <div class="availability-gate-card shopping-price-card">
+            <button class="availability-gate-close" id="shoppingPriceModalClose" type="button" aria-label="Close shopping price details">&times;</button>
+            <p class="eyebrow">Price review</p>
+            <h2 id="shoppingPriceModalTitle">Shopping estimate details</h2>
+            <p class="shopping-price-intro">Review every estimated price before checkout. Items marked “Needs review” use the default estimate and help identify what should be added to the catalog.</p>
+            <div id="shoppingPriceModalBody" class="shopping-price-modal-body"></div>
+            <button class="secondary-admin-action shopping-price-done" id="shoppingPriceModalDone" type="button">Done reviewing prices</button>
+          </div>
+        </section>
+
+        <section class="availability-gate-modal customer-help-modal" id="customerHelpModal" role="dialog" aria-modal="true" aria-labelledby="customerHelpTitle" hidden>
+          <div class="availability-gate-card customer-help-card">
+            <button class="availability-gate-close" id="customerHelpClose" type="button" aria-label="Close page help">&times;</button>
+            <p class="eyebrow">Page help</p>
+            <h2 id="customerHelpTitle">How this page works</h2>
+            <div class="customer-help-body" id="customerHelpBody"></div>
+            <button class="secondary-admin-action customer-help-done" id="customerHelpDone" type="button">Got it</button>
+          </div>
+        </section>
+
+        <section class="membership-page" id="membershipPage" aria-hidden="true">
+          <section class="membership-dashboard" id="membershipDashboard">
+            <div class="membership-dashboard-empty">
+              <h3>No active membership</h3>
+              <p>Choose a membership to unlock automatic savings, monthly perks, and priority support.</p>
+            </div>
+          </section>
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Memberships</p>
+              <h2>Choose the plan that fits your life</h2>
+            </div>
+            <button class="secondary-admin-action" id="closeMembershipsButton" type="button">Back to request</button>
+          </div>
+          <div class="membership-grid">
+            <article class="membership-card">
+              <img src="assets/community-heroes.png" alt="Community Heroes membership" loading="lazy" decoding="async" />
+              <div class="membership-body">
+                <span class="pill">$9.99/month</span>
+                <h3>Community Heroes Membership</h3>
+                <p>Small membership. Big impact. Our thank-you membership for the amazing people who help make our community strong.</p>
+                <h4>Who qualifies?</h4>
+                <p>Healthcare Workers, First Responders, Firefighters, EMS Personnel, Law Enforcement, Teachers & School Staff, Active Military, Veterans, Community Volunteers, and other approved community service professionals.</p>
+                <ul>
+                  <li>2 free Pickup & Delivery requests every month</li>
+                  <li>10% off all additional Pickup & Delivery services</li>
+                  <li>20% off all Shop & Deliver services</li>
+                  <li>15% off all Custom Errand services</li>
+                  <li>One free Rush Service fee each month</li>
+                  <li>Priority scheduling when available</li>
+                  <li>Exclusive member-only promotions and seasonal offers</li>
+                  <li>Special birthday month reward</li>
+                  <li>Locked-in membership pricing while active</li>
+                </ul>
+                <button class="checkout-button" type="button" data-membership-plan="Community Heroes Membership">Join Community Heroes</button>
               </div>
-              <label for="customerName">Name</label>
-              <input id="customerName" type="text" placeholder="Full name" />
-              <label for="customerPhone">Phone</label>
-              <input id="customerPhone" type="tel" placeholder="Phone number" />
-              <label for="customerEmail">Email</label>
-              <input id="customerEmail" type="email" placeholder="Email address" />
-              <label for="pickupAddress">Default pickup</label>
-              <input id="pickupAddress" type="text" placeholder="Store or pickup address" list="locationSuggestions" />
-              <label for="deliveryAddress">Default delivery</label>
-              <input id="deliveryAddress" type="text" placeholder="Delivery address" list="locationSuggestions" />
+            </article>
+            <article class="membership-card featured">
+              <img src="assets/hopes-go-plus-membership.png" alt="Hope's & Go Plus membership" loading="lazy" decoding="async" />
+              <div class="membership-body">
+                <span class="pill">$14.99/month</span>
+                <h3>Hope's & Go Plus</h3>
+                <p>More perks, more savings, more peace of mind.</p>
+                <ul>
+                  <li>2 free Pickup & Delivery requests every month</li>
+                  <li>10% off additional Pickup & Delivery services after free requests</li>
+                  <li>20% off Shop & Deliver services</li>
+                  <li>15% off Custom Errand services</li>
+                  <li>One free Rush Service fee each month</li>
+                  <li>Exclusive member-only promotions and seasonal offers</li>
+                  <li>Special birthday month reward</li>
+                  <li>Locked-in membership pricing while active</li>
+                  <li>After free requests: Pickup $8, Shop $13.50, Custom $18, Additional Stop $3</li>
+                </ul>
+                <button class="checkout-button" type="button" data-membership-plan="Hope's & Go Plus">Join Plus</button>
+              </div>
+            </article>
+            <article class="membership-card">
+              <img src="assets/senior-go-plus.png" alt="Senior Go Plus membership" loading="lazy" decoding="async" />
+              <div class="membership-body">
+                <span class="pill">$29.99/month</span>
+                <h3>Senior Go Plus</h3>
+                <p>Premium support for seniors who deserve extra care.</p>
+                <ul>
+                  <li>Unlimited prescription pickups</li>
+                  <li>5 free Shop & Deliver requests/month</li>
+                  <li>5 free Pickup & Delivery requests/month</li>
+                  <li>Priority support</li>
+                  <li>No rush fees</li>
+                  <li>Exclusive senior perks and birthday month treat</li>
+                  <li>Discounted prices after free requests are used</li>
+                  <li>After free requests: Pickup $7, Shop $10, Custom $15, Additional Stop $3</li>
+                </ul>
+                <button class="checkout-button" type="button" data-membership-plan="Senior Go Plus">Join Senior Go Plus</button>
+              </div>
+            </article>
+          </div>
+          <p class="checkout-status" id="membershipStatus"></p>
+          <section class="embedded-checkout-shell membership-checkout-shell" id="membershipCheckoutShell" aria-live="polite">
+            <div class="section-heading compact">
+              <div>
+                <p class="eyebrow">Membership checkout</p>
+                <h3 id="membershipCheckoutTitle">Secure monthly checkout</h3>
+              </div>
+            </div>
+            <div id="membershipEmbeddedCheckout"></div>
+          </section>
+        </section>
+
+        <section class="customer-account-page" id="customerAccountPage" aria-hidden="true"></section>
+        <section class="customer-account-page" id="customerOrdersPage" aria-hidden="true"></section>
+        <section class="customer-account-page" id="customerPaymentsPage" aria-hidden="true"></section>
+
+        <section class="restaurant-marketplace" id="restaurantMarketplace" aria-hidden="true">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Local restaurant delivery</p>
+              <h2 id="restaurantMarketplaceTitle">Choose a restaurant</h2>
+            </div>
+            <button class="secondary-admin-action" id="closeRestaurantsButton" type="button">Back home</button>
+          </div>
+          <p class="restaurant-marketplace-intro">Choose a restaurant, select food, and continue into the regular Hope's &amp; Go checkout for add-ons, delivery area, and driver tip.</p>
+          <button class="different-pickup-card" id="differentPickupLocationButton" type="button">
+            <strong>Select a Different Pickup Location</strong>
+            <span>Choose a store, restaurant, business, or another pickup address that is not listed below.</span>
+          </button>
+          <div class="restaurant-store-grid" id="restaurantStoreGrid"></div>
+          <section class="restaurant-public-menu" id="restaurantPublicMenu" hidden></section>
+        </section>
+
+        <section class="store-shell" id="services">
+          <aside class="filters" aria-label="Request details">
+            <h2 id="requestDetailsTitle">Tell Us About Your Request</h2>
+            <form class="profile-form info-card-form" id="profileForm">
+              <section class="request-info-card" data-info-card="customerInfo">
+                <div class="section-heading compact mini-heading">
+                  <h3>Customer Info</h3>
+                  <span id="profileStatus">Not saved</span>
+                </div>
+                <div class="request-profile hidden-field" id="customerInfoSavedSummary"></div>
+                <label for="customerName">Name</label>
+                <input id="customerName" type="text" placeholder="Full name" />
+                <label for="customerPhone">Phone</label>
+                <input id="customerPhone" type="tel" placeholder="Phone number" />
+                <label for="customerEmail">Email</label>
+                <input id="customerEmail" type="email" placeholder="Email address" />
+              </section>
+
+              <section class="request-info-card" data-info-card="serviceInfo">
+                <div class="section-heading compact mini-heading">
+                  <h3>Service Info</h3>
+                  <span>Your selections</span>
+                </div>
+                <div class="request-profile" id="serviceInfoSummary">
+                  <strong>Selected services</strong>
+                  <span>Your selected service and add-ons will appear here.</span>
+                </div>
+                <section class="shop-details" id="shopDetailsPanel">
+                  <div class="section-heading compact mini-heading">
+                    <h3>Shop & Deliver list</h3>
+                    <span>Estimate</span>
+                  </div>
+                  <section class="shopping-product-picker" aria-labelledby="shoppingProductPickerTitle">
+                    <div>
+                      <strong id="shoppingProductPickerTitle">Find an exact product</strong>
+                      <span id="shoppingCatalogStatus">Type the shopping store first, then search for a product.</span>
+                    </div>
+                    <label class="tip-field" for="shoppingStoreInput">
+                      Shopping store
+                      <input id="shoppingStoreInput" type="text" placeholder="Type Walmart, Hy-Vee, ALDI, Dollar General, or another store" list="shoppingStoreSuggestions" autocomplete="off" />
+                      <datalist id="shoppingStoreSuggestions">
+                        <option value="Walmart"></option>
+                        <option value="Hy-Vee"></option>
+                        <option value="ALDI"></option>
+                        <option value="Dollar General"></option>
+                      </datalist>
+                    </label>
+                    <label class="tip-field" for="shoppingProductSearch">
+                      Product search
+                      <input id="shoppingProductSearch" type="search" placeholder="Try milk, eggs, paper towels..." autocomplete="off" />
+                    </label>
+                    <div class="shopping-product-suggestions" id="shoppingProductSuggestions" hidden></div>
+                    <div class="selected-shopping-products" id="selectedShoppingProducts">
+                      <span>No exact products selected yet.</span>
+                    </div>
+                  </section>
+                  <label class="tip-field" for="shoppingListInput">
+                    Custom items or anything not found
+                    <textarea id="shoppingListInput" placeholder="2x bakery muffins, preferred substitutions, or another item"></textarea>
+                  </label>
+                  <label class="tip-field" for="shoppingPhotoInput">
+                    Photo list
+                    <input id="shoppingPhotoInput" type="file" accept="image/*" multiple />
+                  </label>
+                  <button class="secondary-admin-action" id="estimateShoppingButton" type="button">Estimate shopping total</button>
+                  <div class="request-profile" id="shoppingEstimate">
+                    <strong>Shopping estimate</strong>
+                    <span>Add a list to estimate average item prices.</span>
+                  </div>
+                  <p class="shopping-estimate-note">
+                    <strong>Shopping total estimate:</strong>
+                    The estimate uses quantities, recognized average retail price ranges, and any price the customer enters. A minimum $2 or 5% cushion may increase when an item has a wider price range. Select “Estimate shopping total” to review every item price. The final receipt replaces the estimate, and all unused shopping funds are refunded.
+                  </p>
+                </section>
+                <section class="additional-stop-details" id="additionalStopDetails">
+                  <div class="section-heading compact mini-heading">
+                    <h3>Additional stop</h3>
+                    <span>Required for add-on</span>
+                  </div>
+                  <label for="additionalStopAddress">Additional stop address</label>
+                  <input id="additionalStopAddress" type="text" placeholder="Extra stop address" list="locationSuggestions" />
+                  <div class="location-helper" id="additionalStopAddressHelper">Add the extra stop between pickup and final delivery.</div>
+                  <div class="location-suggestions" id="additionalStopAddressSuggestions"></div>
+                  <label for="additionalStopNotes">Additional stop details</label>
+                  <textarea id="additionalStopNotes" placeholder="What should happen at the extra stop?"></textarea>
+                </section>
+                <label for="customerNotes">(Optional) Notes for Hope's & Go Drivers</label>
+                <textarea id="customerNotes" placeholder="Gate code, substitutions, delivery notes"></textarea>
+              </section>
+
+              <section class="request-info-card" data-info-card="pickupInfo">
+                <div class="section-heading compact mini-heading">
+                  <h3>Pickup Info</h3>
+                  <span>Where should we start?</span>
+                </div>
+                <label for="pickupAddress">Pickup location</label>
+                <input id="pickupAddress" type="text" placeholder="Store, restaurant, business, or address" list="locationSuggestions" required />
+                <div class="location-helper" id="pickupAddressHelper">Start typing a store, business, or address.</div>
+                <div class="location-suggestions" id="pickupAddressSuggestions"></div>
+                <label for="pickupInstructions">Pickup instructions</label>
+                <textarea id="pickupInstructions" placeholder="Order name, order number, counter pickup, parking notes"></textarea>
+              </section>
+
+              <section class="request-info-card" data-info-card="dropoffInfo">
+                <div class="section-heading compact mini-heading">
+                  <h3>Drop-Off Info</h3>
+                  <span>Where should it go?</span>
+                </div>
+                <label for="deliveryAddress">Drop-off address</label>
+                <input id="deliveryAddress" type="text" placeholder="Delivery address" list="locationSuggestions" />
+                <div class="location-helper" id="deliveryAddressHelper">Saved delivery can prefill, but you can update it here.</div>
+                <div class="service-area-address-warning" id="deliveryServiceAreaWarning" role="alert" aria-live="assertive" hidden></div>
+                <div class="location-suggestions" id="deliveryAddressSuggestions"></div>
+                <label for="dropoffInstructions">Drop-off instructions</label>
+                <textarea id="dropoffInstructions" placeholder="Apartment, gate code, leave-at-door notes"></textarea>
+                <fieldset class="delivery-choice">
+                  <legend>Choose Drop-Off Method</legend>
+                  <label>
+                    <span>Hand to me with a 4-digit code</span>
+                    <input type="radio" name="deliveryMethod" value="hand_to_customer" checked />
+                  </label>
+                  <label>
+                    <span>Leave at door with photo proof</span>
+                    <input type="radio" name="deliveryMethod" value="no_contact" />
+                  </label>
+                </fieldset>
+                <div class="map-preview" id="customerMapPreview" hidden>
+                  <div id="customerMapCanvas"></div>
+                  <p id="customerMapStatus"></p>
+                </div>
+              </section>
               <datalist id="locationSuggestions">
+                <option value="McDonald's - Roosevelt Ave, Burlington, IA"></option>
+                <option value="McDonald's - Agency St, West Burlington, IA"></option>
                 <option value="Burlington, IA"></option>
                 <option value="West Burlington, IA"></option>
                 <option value="Hy-Vee, 3140 Agency St, Burlington, IA"></option>
@@ -148,9 +454,11 @@
                 <option value="Danville, IA"></option>
                 <option value="New London, IA"></option>
               </datalist>
-              <label for="customerNotes">Saved notes</label>
-              <textarea id="customerNotes" placeholder="Gate code, substitutions, delivery notes"></textarea>
-              <button class="checkout-button profile-save" type="submit">Save profile</button>
+              <p class="checkout-status" id="customerFlowStatus"></p>
+              <div class="flow-actions">
+                <button class="secondary-admin-action" type="button" data-customer-back>Back</button>
+                <button class="checkout-button profile-save" type="button" data-customer-next>Continue</button>
+              </div>
             </form>
             <label for="searchInput">Search services</label>
             <input id="searchInput" type="search" placeholder="Pickup, shop, add-on" />
@@ -166,103 +474,198 @@
           </aside>
 
           <section class="catalog" aria-label="Services">
-            <section class="driver-tabs customer-flow-tabs" aria-label="Customer checkout pages">
-              <button class="driver-tab active" type="button" data-customer-page-link="customerServices">Services</button>
-              <button class="driver-tab" type="button" data-customer-page-link="customerDetails">Details</button>
-              <button class="driver-tab" type="button" data-customer-page-link="customerTip">Tip</button>
-              <button class="driver-tab" type="button" data-customer-page-link="customerCheckout">Checkout</button>
-            </section>
             <div class="section-heading">
               <div>
-                <p class="eyebrow">Service menu</p>
-                <h2>Customer storefront</h2>
+                <p class="eyebrow" id="customerStepEyebrow">Step 1</p>
+                <h2 id="customerStepTitle">Choose a main service</h2>
               </div>
               <span id="productCount"></span>
             </div>
+            <p class="service-area-note" id="serviceAreaQuoteNote">
+              <strong>Additional Service Areas</strong>
+              <span>Hope's & Go includes Burlington city limits and up to 5 miles outside Burlington city limits with no additional service area fee. Select the service area that best matches your location.</span>
+              <span>Locations more than 35 miles from Burlington city limits require a custom quote based on distance, travel time, and service requested.</span>
+              <a class="quote-link" href="mailto:helping_hands@hopes-go.com?subject=Custom%20service%20area%20quote%20request">Get a Quote</a>
+            </p>
             <div class="product-grid" id="productGrid"></div>
+            <div class="flow-actions">
+              <button class="secondary-admin-action" type="button" data-customer-back>Back</button>
+              <button class="checkout-button" type="button" data-customer-next>Continue to add-ons</button>
+            </div>
           </section>
 
           <aside class="cart-panel" aria-label="Request summary">
             <h2>Request summary</h2>
             <div id="cartItems" class="empty-state">No services selected yet.</div>
-            <section class="shop-details" id="shopDetailsPanel">
-              <div class="section-heading compact mini-heading">
-                <h3>Shop & Deliver list</h3>
-                <span>Estimate</span>
+            <section class="tip-choice-card" id="tipChoiceCard">
+              <img class="tip-page-image" src="assets/tip.png" alt="Add a tip for Hope's & Go" loading="lazy" decoding="async" />
+              <div>
+                <h3>Would you like to add a tip?</h3>
+                <p>Tips are optional and appreciated. 100% of tips go to your Hope's & Go Driver.</p>
               </div>
-              <label class="tip-field" for="shoppingListInput">
-                Text list
-                <textarea id="shoppingListInput" placeholder="Milk, bread, strawberries, paper towels"></textarea>
-              </label>
-              <label class="tip-field" for="shoppingPhotoInput">
-                Photo list
-                <input id="shoppingPhotoInput" type="file" accept="image/*" multiple />
-              </label>
-              <button class="secondary-admin-action" id="estimateShoppingButton" type="button">Estimate shopping total</button>
-              <div class="request-profile" id="shoppingEstimate">
-                <strong>Shopping estimate</strong>
-                <span>Add a list to estimate average item prices.</span>
+              <div class="tip-choice-actions">
+                <button class="checkout-button" type="button" data-tip-choice="enter">Enter Tip Amount</button>
+                <button class="secondary-admin-action" type="button" data-tip-choice="skip">Continue Without a Tip</button>
               </div>
             </section>
-            <label class="tip-field" for="tipInput">
-              Optional tip
-              <input id="tipInput" type="number" min="0" step="1" value="0" />
+            <label class="tip-field tip-amount-field hidden-field" id="tipAmountField" for="tipInput">
+              Tip Amount
+              <input id="tipInput" type="text" inputmode="decimal" placeholder="$0.00" required />
             </label>
-            <label class="tip-field" for="discountInput">
-              Discount code
-              <input id="discountInput" type="text" placeholder="Enter code" />
-            </label>
-            <div class="cart-total">
-              <span>Estimated total</span>
+            <button class="checkout-button hidden-field" id="applyTipButton" type="button">Apply Tip</button>
+            <section class="promo-code-panel" aria-labelledby="promoCodeTitle">
+              <div class="promo-code-heading">
+                <span id="promoCodeTitle">Promo or Discount Code</span>
+                <strong>Save on this request</strong>
+              </div>
+              <input id="discountInput" type="text" placeholder="Enter code, if applicable." />
+            </section>
+            <div class="checkout-review-grid" id="checkoutReviewGrid">
+              <article class="checkout-summary-card" id="checkoutOrderCard">
+                <h3>Order Info</h3>
+                <p>No services selected yet.</p>
+              </article>
+              <article class="checkout-summary-card" id="requestProfile">
+                <h3>Customer Info</h3>
+                <p>Save a customer profile to prefill each order.</p>
+              </article>
+              <article class="checkout-summary-card" id="checkoutPickupCard">
+                <h3>Pickup Info</h3>
+                <p>Pickup details will appear here.</p>
+              </article>
+              <article class="checkout-summary-card" id="checkoutDropoffCard">
+                <h3>Drop-Off Info</h3>
+                <p>Drop-off details will appear here.</p>
+              </article>
+              <article class="checkout-summary-card payment-summary-card" id="checkoutPaymentSummary">
+                <h3>Payment Summary</h3>
+                <p>Totals will appear here.</p>
+              </article>
+              <article class="checkout-summary-card delivery-code-card" id="deliveryPinCard"></article>
+            </div>
+            <div class="legacy-total-values" aria-hidden="true">
               <strong id="cartTotal">$0.00</strong>
-            </div>
-            <div class="cart-total shopping-hold-total">
-              <span>Shopping estimate hold</span>
               <strong id="shoppingHoldTotal">$0.00</strong>
-            </div>
-            <div class="cart-total discount-total">
-              <span>Discount</span>
               <strong id="discountTotal">$0.00</strong>
             </div>
-            <p class="payment-note">No charge until Hope's & Go accepts your request. Unused shopping estimate funds are refunded immediately when shopping is completed.</p>
+            <p class="payment-note" id="checkoutPaymentNotice">No charge until Hope's & Go accepts your request. Unused shopping estimate funds are refunded immediately when shopping is completed.</p>
             <p class="checkout-status" id="requestValidation"></p>
-            <div class="request-profile" id="requestProfile">
-              <strong>Profile details</strong>
-              <span>Save a customer profile to prefill each order.</span>
-            </div>
-            <div class="request-profile checkout-carryover" id="checkoutCarryover">
-              <strong>Checkout carryover</strong>
-              <span>Your customer details and total will carry into checkout.</span>
+            <div class="request-profile checkout-carryover" id="checkoutCarryover"></div>
+            <div class="embedded-checkout-shell" id="embeddedCheckoutShell" aria-live="polite">
+              <div class="embedded-checkout-brand">
+                <span>Hope's & Go secure checkout</span>
+                <strong id="embeddedCheckoutTotal">$0.00</strong>
+              </div>
+              <div id="embeddedCheckout" class="stripe-embedded-checkout"></div>
             </div>
             <label class="terms-check">
               <input id="termsAccepted" type="checkbox" />
               <span>
-                I agree to the <a href="assets/terms-of-service.pdf" target="_blank" rel="noreferrer">Terms of Service</a>
+                By submitting this order, I agree to the
+                <a href="assets/terms-of-service.pdf" target="_blank" rel="noreferrer">Terms of Service</a>,
+                <a href="https://hopesgo-my.sharepoint.com/:b:/g/personal/hope_go_hopesgo_onmicrosoft_com/IQCaek7dRyByQ6nfGjOLqmR5ARq9OjqUrBybqrUL3Aglmkc?e=geY1bw" target="_blank" rel="noreferrer">privacy policy</a>,
                 and refund policies.
               </span>
             </label>
-            <button class="checkout-button" id="checkoutButton" type="button">Continue to secure checkout</button>
+            <div class="flow-actions">
+              <button class="secondary-admin-action" type="button" data-customer-back>Back</button>
+              <button class="checkout-button" id="customerFlowNextButton" type="button" data-customer-next>Continue</button>
+            </div>
+            <button class="checkout-button" id="checkoutButton" type="button">Place order</button>
             <p class="checkout-status" id="checkoutStatus"></p>
           </aside>
         </section>
       </section>
 
+      <section class="view" id="restaurant" aria-labelledby="restaurantDashboardTitle">
+        <header class="workspace-header restaurant-workspace-header">
+          <div>
+            <p class="eyebrow">Hope's &amp; Go restaurant partner</p>
+            <h1 id="restaurantDashboardTitle">Restaurant Dashboard</h1>
+          </div>
+          <button class="secondary-admin-action" id="restaurantLogout" type="button">Log out</button>
+          <button class="secondary-admin-action" id="restaurantBackToAdmin" type="button" hidden>Back to Admin</button>
+        </header>
+        <main class="restaurant-dashboard-shell">
+          <nav class="restaurant-dashboard-menu" aria-label="Restaurant menu">
+            <button class="active" type="button" data-restaurant-page="restaurantEditorPage">Store &amp; Menu</button>
+            <button type="button" data-restaurant-page="restaurantCurrentOrdersPage">Current Orders</button>
+            <button type="button" data-restaurant-page="restaurantPastOrdersPage">Past Orders</button>
+            <button type="button" data-restaurant-page="restaurantPayRecordsPage">Pay Records</button>
+          </nav>
+          <section class="restaurant-dashboard-page" id="restaurantCurrentOrdersPage">
+            <div class="section-heading compact"><div><h2>Current Orders</h2><span>Press Start Order when you begin, then Finish Order when it is ready.</span></div><button class="secondary-admin-action" id="refreshRestaurantOrders" type="button">Refresh</button></div>
+            <div id="restaurantCurrentOrdersBoard" class="restaurant-order-board"></div>
+          </section>
+          <section class="restaurant-dashboard-page" id="restaurantPastOrdersPage">
+            <div class="section-heading compact"><h2>Past Orders</h2><span>Completed and cancelled orders</span></div>
+            <div id="restaurantPastOrdersBoard" class="restaurant-order-board"></div>
+          </section>
+          <section class="restaurant-dashboard-page" id="restaurantPayRecordsPage">
+            <div class="section-heading compact"><h2>Pay Records</h2><span>Food and food-tax amounts associated with orders</span></div>
+            <div id="restaurantPayRecordsBoard" class="restaurant-order-board"></div>
+          </section>
+          <div class="restaurant-dashboard-page active" id="restaurantEditorPage">
+          <section class="restaurant-setup-card" id="restaurantAdminChooser" hidden>
+            <div class="section-heading compact"><h2>Choose a restaurant site</h2><span>Owner and admin access</span></div>
+            <div class="restaurant-store-grid" id="restaurantAdminStoreGrid"></div>
+          </section>
+          <section class="restaurant-setup-card restaurant-welcome-card">
+            <span class="restaurant-save-indicator" id="restaurantSaveIndicator">Changes publish to the customer site when you press Save</span>
+            <h2>Keep your restaurant page up to date</h2>
+            <p>Everything is on one simple page. Add menu items, change prices, upload food pictures, update weekly deals, then press Save &amp; Publish.</p>
+          </section>
+          <form id="restaurantEditorForm">
+            <section class="restaurant-setup-card">
+              <div class="section-heading compact"><h2>Store information</h2><span>Shown to customers</span></div>
+              <div class="restaurant-form-grid">
+                <label>Store name<input id="restaurantStoreName" type="text" required /></label>
+                <label>Phone<input id="restaurantPhone" type="tel" /></label>
+                <label class="wide-field">Address<input id="restaurantAddress" type="text" /></label>
+                <label class="wide-field">Short description<textarea id="restaurantDescription" rows="3"></textarea></label>
+                <label>Store logo<input id="restaurantLogoInput" type="file" accept="image/png,image/jpeg,image/webp" /></label>
+                <label>Cover picture<input id="restaurantCoverInput" type="file" accept="image/png,image/jpeg,image/webp" /></label>
+              </div>
+            </section>
+            <section class="restaurant-setup-card">
+              <div class="section-heading compact"><h2>Hours</h2><span>Type “Closed” when needed</span></div>
+              <div class="restaurant-hours-grid" id="restaurantHoursEditor"></div>
+            </section>
+            <section class="restaurant-setup-card">
+              <div class="section-heading compact">
+                <div><h2>Menu</h2><span>Add, remove, or temporarily hide items</span></div>
+                <button class="secondary-admin-action" id="addRestaurantMenuItem" type="button">+ Add menu item</button>
+              </div>
+              <div class="restaurant-editor-list" id="restaurantMenuEditor"></div>
+            </section>
+            <section class="restaurant-setup-card">
+              <div class="section-heading compact">
+                <div><h2>Weekly deals</h2><span>Change these as often as needed</span></div>
+                <button class="secondary-admin-action" id="addRestaurantDeal" type="button">+ Add weekly deal</button>
+              </div>
+              <div class="restaurant-editor-list" id="restaurantDealsEditor"></div>
+            </section>
+            <section class="restaurant-setup-card restaurant-publish-bar">
+              <div><strong>Ready to publish?</strong><span id="restaurantStripeStatus">Checking Stripe connection…</span></div>
+              <button class="checkout-button" type="submit">Save &amp; Publish</button>
+              <p class="checkout-status" id="restaurantEditorStatus"></p>
+            </section>
+          </form>
+          </div>
+        </main>
+      </section>
+
       <section class="view" id="employee" aria-labelledby="employee-title">
-        <section class="workspace-header">
+        <section class="workspace-header employee-public-header">
           <div>
             <p class="eyebrow">Employee dashboard</p>
-            <h1 id="employee-title">Requests waiting on care</h1>
-          </div>
-          <div class="status-strip">
-            <span><strong>5</strong> pending approval</span>
-            <span><strong>3</strong> waiting on driver</span>
-            <span><strong>2</strong> active routes</span>
+            <h1 id="employee-title">Driver Dashboard</h1>
           </div>
         </section>
 
         <section class="employee-login" id="employeeLogin">
           <form class="login-panel" id="employeeLoginForm">
-            <img src="assets/logo.png" alt="" />
+            <img src="assets/logo.png" alt="" loading="lazy" decoding="async" />
             <h2>Employee login</h2>
             <label>
               Username
@@ -278,31 +681,42 @@
         </section>
 
         <section class="employee-private" id="employeePrivate">
-        <section class="driver-tabs" aria-label="Driver dashboard pages">
-          <button class="driver-tab active" type="button" data-driver-page-link="driverHome">Home</button>
+        <section class="driver-app-bar">
+          <button class="driver-menu-button" id="driverMenuToggle" type="button" aria-expanded="false">Menu</button>
+        </section>
+        <section class="driver-menu-panel" id="driverMenuPanel" aria-hidden="true">
+          <button class="driver-tab active" type="button" data-driver-page-link="driverHome">Home requests</button>
           <button class="driver-tab" type="button" data-driver-page-link="driverSchedule">Schedule</button>
-          <button class="driver-tab" type="button" data-driver-page-link="driverCurrentJob">Current Job</button>
+          <button class="driver-tab" type="button" data-driver-page-link="driverMessages">Messages</button>
+          <button class="driver-tab" type="button" data-driver-page-link="driverAvailability">Availability</button>
           <button class="driver-tab" type="button" data-driver-page-link="driverPastJobs">Past Jobs</button>
           <button class="driver-tab" type="button" data-driver-page-link="driverPay">Pay</button>
-          <button class="driver-tab" type="button" id="employeeLogout">Logout</button>
+          <button class="driver-tab" type="button" data-driver-page-link="driverDocuments">Documents</button>
+          <button class="driver-tab" type="button" data-driver-page-link="driverProfile">Profile</button>
+          <a class="driver-tab support-link" href="mailto:helping_hands@hopes-go.com">Contact support</a>
+          <button class="driver-tab" type="button" id="employeeLogout">Log out</button>
         </section>
 
         <section class="driver-page active" id="driverHome">
+          <section class="driver-dashboard driver-home-summary">
+            <div class="section-heading compact">
+              <div>
+                <p class="eyebrow" id="driverGreeting">Hello</p>
+                <h2>Driver Dashboard</h2>
+              </div>
+              <span id="driverDemandPill" class="pill">Checking demand</span>
+            </div>
+            <div class="driver-status-grid" id="driverStatusSummary"></div>
+            <div class="driver-clock-panel" id="driverClockPanel"></div>
+          </section>
           <section class="operations-grid">
             <article class="ops-column">
               <div class="section-heading compact">
-                <h2>Available work</h2>
-                <span>Approved by admin</span>
+                <h2>Approved requests</h2>
+                <span>Ready to accept</span>
             </div>
             <div id="orderQueue"></div>
           </article>
-            <article class="ops-column">
-              <div class="section-heading compact">
-                <h2>Driver reminders</h2>
-                <span>Before starting</span>
-              </div>
-              <div id="inventoryAlerts"></div>
-            </article>
           </section>
         </section>
 
@@ -311,36 +725,69 @@
           <div class="section-heading compact">
             <div>
               <p class="eyebrow">Employee schedule</p>
-              <h2>Set availability</h2>
+              <h2>Driver Schedule</h2>
             </div>
-            <span>Shared with admin</span>
+            <span>Central Time</span>
+          </div>
+          <section class="driver-automatic-schedule" id="driverAutomaticSchedule" aria-live="polite" hidden></section>
+          <div id="driverManualAvailabilityArea">
+          <div class="availability-editor-intro" id="availabilityEditorIntro">
+            <strong>Set your availability</strong>
+            <span>Keep the shift blocks or add the exact start and end times you need.</span>
           </div>
           <form class="schedule-form" id="availabilityForm">
             <label>
               Driver name
               <input id="availabilityName" type="text" placeholder="Your name" required readonly />
             </label>
-            <label>
-              Available days
-              <input id="availabilityDays" type="text" placeholder="Monday, Wednesday, Saturday" required />
-            </label>
-            <div class="form-row">
-              <label>
-                Start time
-                <input id="availabilityStart" type="time" required />
-              </label>
-              <label>
-                End time
-                <input id="availabilityEnd" type="time" required />
-              </label>
+            <div class="availability-actions">
+              <button class="secondary-admin-action" type="button" id="updateAvailabilityButton">Update Availability</button>
             </div>
+            <div class="availability-builder" id="availabilityBuilder"></div>
             <label>
               Notes
               <input id="availabilityNotes" type="text" placeholder="Areas, limits, or preferred request types" />
             </label>
-            <button class="checkout-button" type="submit">Save availability</button>
+            <button class="checkout-button" type="submit">Save Changes</button>
           </form>
-          <div id="employeeAvailabilityList"></div>
+          <div id="driverAvailabilitySummary"></div>
+          </div>
+          <section class="monthly-activity-panel" aria-labelledby="monthlyActivityHeading">
+            <div class="section-heading compact mini-heading">
+              <div>
+                <p class="eyebrow">Previous month</p>
+                <h3 id="monthlyActivityHeading">Most Active Times</h3>
+              </div>
+              <span>Updates monthly</span>
+            </div>
+            <div id="monthlyActivityInsights"></div>
+          </section>
+          </section>
+        </section>
+
+        <section class="driver-page" id="driverMessages">
+          <section class="driver-dashboard">
+            <div class="section-heading compact">
+              <div>
+                <p class="eyebrow">Request messages</p>
+                <h2>Messages</h2>
+              </div>
+              <span id="driverMessageBadge" class="pill">0 unread</span>
+            </div>
+            <div id="driverMessagesPanel"></div>
+          </section>
+        </section>
+
+        <section class="driver-page" id="driverAvailability">
+          <section class="driver-dashboard">
+            <div class="section-heading compact">
+              <div>
+                <p class="eyebrow">Availability records</p>
+                <h2>Availability</h2>
+              </div>
+              <span>Current and previous</span>
+            </div>
+            <div id="driverAvailabilityHistory"></div>
           </section>
         </section>
 
@@ -354,6 +801,7 @@
             <span>Maps ready</span>
           </div>
           <div id="driverJobDetails"></div>
+          <div id="driverActiveMessaging"></div>
           <form class="schedule-form completion-form" id="completionForm">
             <div class="section-heading compact mini-heading">
               <h3>Complete job</h3>
@@ -362,6 +810,10 @@
             <label class="terms-check">
               <input id="handedToCustomer" type="checkbox" />
               <span>Order was handed directly to the customer.</span>
+            </label>
+            <label id="handoffPinField">
+              Customer handoff code
+              <input id="handoffPinInput" type="text" inputmode="numeric" maxlength="4" placeholder="4-digit code" />
             </label>
             <label>
               Drop-off photo
@@ -399,110 +851,156 @@
             <div class="section-heading compact">
               <div>
                 <p class="eyebrow">Payroll view</p>
-                <h2>My pay and tips</h2>
+                <h2>Pay</h2>
               </div>
               <span>No cashout</span>
             </div>
             <div id="driverPayDetails"></div>
           </section>
         </section>
+
+        <section class="driver-page" id="driverDocuments">
+          <section class="driver-dashboard">
+            <div class="section-heading compact">
+              <div>
+                <p class="eyebrow">Driver documents</p>
+                <h2>Documents</h2>
+              </div>
+              <span>Reference</span>
+            </div>
+            <div id="driverDocumentsList"></div>
+          </section>
+        </section>
+
+        <section class="driver-page" id="driverProfile">
+          <section class="driver-dashboard">
+            <div class="section-heading compact">
+              <div>
+                <p class="eyebrow">Driver profile</p>
+                <h2>Profile</h2>
+              </div>
+              <span>Private</span>
+            </div>
+            <div id="driverProfileDetails"></div>
+          </section>
+        </section>
         </section>
       </section>
 
       <section class="view" id="admin" aria-labelledby="admin-title">
+        <section class="admin-app-bar">
+          <button class="driver-menu-button" id="adminMenuToggle" type="button" aria-expanded="false">Menu</button>
+        </section>
+        <section class="driver-menu-panel admin-menu-panel" id="adminMenuPanel" aria-hidden="true">
+          <button class="driver-tab active" type="button" data-admin-page-link="adminOverview">Overview</button>
+          <button class="driver-tab" type="button" data-admin-page-link="adminDispatch">Dispatch</button>
+          <button class="driver-tab" type="button" data-admin-page-link="adminAutoApproval">Auto-Approval</button>
+          <button class="driver-tab" type="button" data-admin-page-link="adminDiscounts">Discounts</button>
+          <button class="driver-tab" type="button" data-admin-page-link="adminDrivers">Drivers</button>
+          <button class="driver-tab" type="button" data-admin-page-link="adminSchedule">Schedule</button>
+          <button class="driver-tab" type="button" data-admin-page-link="adminCustomers">Customers</button>
+          <button class="driver-tab" type="button" data-admin-page-link="adminMessages">Messages</button>
+          <button class="driver-tab" type="button" data-admin-page-link="adminPay">Pay</button>
+          <button class="driver-tab" type="button" data-admin-page-link="adminDaily">Daily</button>
+          <button class="driver-tab" type="button" data-admin-page-link="adminCatalog">Catalog</button>
+          <button class="driver-tab" type="button" data-admin-page-link="adminExports">Exports</button>
+          <button class="driver-tab" type="button" data-admin-page-link="adminSystems">Systems</button>
+          <button class="driver-tab" type="button" id="adminLogout">Log out</button>
+        </section>
         <section class="workspace-header">
           <div>
             <p class="eyebrow">Admin center</p>
             <h1 id="admin-title">Hope's & Go back office</h1>
           </div>
-          <button class="primary-action admin-action" type="button">Add service</button>
         </section>
 
-        <section class="driver-tabs" aria-label="Admin center pages">
+        <section class="driver-tabs admin-ribbon-tabs" aria-label="Admin center pages">
           <button class="driver-tab active" type="button" data-admin-page-link="adminOverview">Overview</button>
-          <button class="driver-tab" type="button" data-admin-page-link="adminServices">Services</button>
           <button class="driver-tab" type="button" data-admin-page-link="adminDispatch">Dispatch</button>
+          <button class="driver-tab" type="button" data-admin-page-link="adminAutoApproval">Auto-Approval</button>
           <button class="driver-tab" type="button" data-admin-page-link="adminDiscounts">Discounts</button>
           <button class="driver-tab" type="button" data-admin-page-link="adminDrivers">Drivers</button>
+          <button class="driver-tab" type="button" data-admin-page-link="adminSchedule">Schedule</button>
+          <button class="driver-tab" type="button" data-admin-page-link="adminCustomers">Customers</button>
+          <button class="driver-tab" type="button" data-admin-page-link="adminMessages">Messages</button>
           <button class="driver-tab" type="button" data-admin-page-link="adminPay">Pay</button>
+          <button class="driver-tab" type="button" data-admin-page-link="adminDaily">Daily</button>
+          <button class="driver-tab" type="button" data-admin-page-link="adminCatalog">Catalog</button>
+          <button class="driver-tab" type="button" data-admin-page-link="adminExports">Exports</button>
           <button class="driver-tab" type="button" data-admin-page-link="adminSystems">Systems</button>
-          <button class="driver-tab" type="button" data-admin-page-link="adminPolicies">Policies</button>
         </section>
 
         <section class="admin-page active" id="adminOverview">
-        <section class="admin-metrics">
-          <article>
-            <span>Pending requests</span>
-            <strong>5</strong>
-            <small>Awaiting accept or decline</small>
-          </article>
-          <article>
-            <span>Authorized value</span>
-            <strong>$185</strong>
-            <small>Not charged yet</small>
-          </article>
-          <article>
-            <span>Accepted today</span>
-            <strong>8</strong>
-            <small>Charge after driver accepts</small>
-          </article>
-          <article>
-            <span>Tip choice</span>
-            <strong>Optional</strong>
-            <small>Customer controlled</small>
-          </article>
-        </section>
-        </section>
-
-        <section class="admin-page" id="adminServices">
-        <section class="admin-layout">
-          <article class="admin-panel">
-            <div class="section-heading compact">
-              <h2>Service management</h2>
-              <span>Catalog</span>
-            </div>
-            <table>
-              <thead>
-                <tr>
-                  <th>Service</th>
-                  <th>Category</th>
-                  <th>Price</th>
-                  <th>Payment rule</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody id="adminProducts"></tbody>
-            </table>
-          </article>
-
-          <aside class="admin-panel">
-            <div class="section-heading compact">
-              <h2>Operations stack</h2>
-              <span>Connected</span>
-            </div>
-            <div class="integration-list">
-              <div><strong>Microsoft</strong><span>Teams communication, Outlook Calendar scheduling, Forms, email, and staff docs</span></div>
-              <div><strong>Novo</strong><span>Business banking and cash flow</span></div>
-              <div><strong>Stripe</strong><span>Authorize at request, charge after acceptance</span></div>
-              <div><strong>Xero</strong><span>Accounting and reconciliation</span></div>
-            </div>
-            <a class="terms-link" href="assets/terms-of-service.pdf" target="_blank" rel="noreferrer">
-              Open terms of service
-            </a>
-          </aside>
-        </section>
+        <section class="admin-metrics" id="adminMetrics"></section>
         </section>
 
         <section class="admin-page" id="adminDispatch">
         <section class="admin-layout">
           <article class="admin-panel">
             <div class="section-heading compact">
-              <h2>Driver dispatch</h2>
-              <span>Scheduled drivers</span>
+              <h2>Incoming requests</h2>
+              <span>Approve or send back</span>
             </div>
             <div id="dispatchBoard"></div>
           </article>
         </section>
+        </section>
+
+        <section class="admin-page" id="adminAutoApproval">
+          <section class="auto-approval-hero admin-panel">
+            <div>
+              <p class="eyebrow">Safe approvals while you're away</p>
+              <h2>Auto-Approval Settings</h2>
+              <p class="payment-note">Only orders with a validated payment and no known risk flags can be approved automatically.</p>
+            </div>
+            <div id="autoApprovalStatus" class="auto-approval-status" aria-live="polite"></div>
+          </section>
+
+          <form id="autoApprovalForm" class="admin-layout auto-approval-layout">
+            <article class="admin-panel">
+              <div class="section-heading compact">
+                <div><p class="eyebrow">Approval rules</p><h2>Safety controls</h2></div>
+                <label class="switch-control"><input id="autoApprovalEnabled" type="checkbox" /><span>On</span></label>
+              </div>
+              <label>
+                Maximum order amount
+                <div class="money-input"><span>$</span><input id="autoApprovalMaxAmount" type="number" min="0" step="1" value="75" required /></div>
+              </label>
+              <label class="check-row"><input id="autoApprovalPaymentRequired" type="checkbox" checked disabled /> Require a valid payment authorization</label>
+              <label class="check-row"><input id="autoApprovalTrustedPriority" type="checkbox" checked /> Prioritize trusted or existing customers who pass every check</label>
+              <div class="safety-list">
+                <strong>Always sent to manual review</strong>
+                <span>Orders above the limit</span><span>Payment or Stripe Radar flags</span><span>Mismatched addresses</span><span>Repeated failed payments</span><span>Suspicious or unusual customer data</span>
+              </div>
+            </article>
+
+            <article class="admin-panel">
+              <div class="section-heading compact"><div><p class="eyebrow">Weekly schedule</p><h2>Active timeframes</h2></div><span>Local time</span></div>
+              <div id="autoApprovalSchedule" class="auto-approval-schedule"></div>
+            </article>
+
+            <article class="admin-panel away-mode-panel">
+              <div class="section-heading compact"><div><p class="eyebrow">Temporary override</p><h2>I'm Away</h2></div><span>Auto-expires</span></div>
+              <div class="away-quick-actions">
+                <button type="button" data-away-preset="120">Next 2 hours</button>
+                <button type="button" data-away-until>Until chosen time</button>
+                <button type="button" data-away-custom>Custom start/end</button>
+              </div>
+              <div class="away-time-fields">
+                <label>Start <input id="awayStart" type="datetime-local" /></label>
+                <label>End <input id="awayEnd" type="datetime-local" /></label>
+              </div>
+              <button class="secondary-admin-action" id="cancelAwayMode" type="button">Cancel Away mode</button>
+              <p id="awayModeStatus" class="payment-note"></p>
+            </article>
+
+            <div class="auto-approval-save"><button class="checkout-button" type="submit">Save Auto-Approval Settings</button><span id="autoApprovalSaveStatus" aria-live="polite"></span></div>
+          </form>
+
+          <section class="admin-panel auto-approval-log-panel">
+            <div class="section-heading compact"><div><p class="eyebrow">Audit trail</p><h2>Auto-Approval Activity Log</h2></div><span id="autoApprovalLogCount">0 entries</span></div>
+            <div id="autoApprovalLog"></div>
+          </section>
         </section>
 
         <section class="admin-page" id="adminDiscounts">
@@ -557,19 +1055,6 @@
             </div>
             <div id="adminAvailabilityBoard"></div>
           </article>
-
-          <aside class="admin-panel">
-            <div class="section-heading compact">
-              <h2>Scheduling rules</h2>
-              <span>Dispatch</span>
-            </div>
-            <div class="integration-list">
-              <div><strong>Outlook Calendar availability</strong><span>Driver schedules should sync from Microsoft calendars before dispatch.</span></div>
-              <div><strong>Teams dispatch</strong><span>Available drivers can receive claimable job offers in Microsoft Teams.</span></div>
-              <div><strong>First accept wins</strong><span>The first available driver to claim the job is assigned the order.</span></div>
-              <div><strong>Charge after claim</strong><span>Customer payment is captured after the assigned driver accepts the dispatched job.</span></div>
-            </div>
-          </aside>
         </section>
 
         <section class="admin-layout">
@@ -584,11 +1069,86 @@
           <aside class="admin-panel">
             <div class="section-heading compact">
               <h2>Mileage report</h2>
-              <span>Export ready</span>
+              <span>Export from Exports</span>
             </div>
             <div id="mileageSummary"></div>
           </aside>
         </section>
+        </section>
+
+        <section class="admin-page" id="adminSchedule">
+          <section class="admin-layout operations-schedule-layout">
+            <article class="admin-panel">
+              <div class="section-heading compact">
+                <div>
+                  <p class="eyebrow">Owner availability</p>
+                  <h2>Operating Schedule</h2>
+                </div>
+                <span>Central Time</span>
+              </div>
+              <div id="ownerOperationsStatus"></div>
+              <div class="owner-status-actions" aria-label="Owner availability override">
+                <button type="button" data-owner-operations-status="Online">Online</button>
+                <button type="button" data-owner-operations-status="Busy">Busy</button>
+                <button type="button" data-owner-operations-status="Offline">Offline</button>
+                <button type="button" data-owner-operations-status="Vacation Mode">Vacation Mode</button>
+                <button class="secondary-admin-action" type="button" data-owner-operations-status="Auto">Return to Automatic Schedule</button>
+              </div>
+            </article>
+
+            <article class="admin-panel">
+              <div class="section-heading compact">
+                <div>
+                  <p class="eyebrow">Clock-in monitor</p>
+                  <h2>Driver Coverage</h2>
+                </div>
+                <span>20-minute grace period</span>
+              </div>
+              <div id="driverOperationsBoard"></div>
+            </article>
+          </section>
+
+          <section class="admin-panel operations-alert-panel">
+            <div class="section-heading compact">
+              <div>
+                <p class="eyebrow">Operations notifications</p>
+                <h2>Recent Alerts</h2>
+              </div>
+              <span>In-app and SMS</span>
+            </div>
+            <div id="operationsAlertsBoard"></div>
+          </section>
+        </section>
+
+        <section class="admin-page" id="adminCustomers">
+          <section class="admin-layout">
+            <article class="admin-panel">
+              <div class="section-heading compact">
+                <div>
+                  <p class="eyebrow">Customer records</p>
+                  <h2>Customers</h2>
+                </div>
+                <span id="adminCustomerCount">0 Records</span>
+              </div>
+              <div id="adminCustomerBoard"></div>
+            </article>
+          </section>
+        </section>
+
+        <section class="admin-page" id="adminMessages">
+          <section class="admin-layout">
+            <article class="admin-panel admin-messages-panel">
+              <div class="section-heading compact">
+                <div>
+                  <p class="eyebrow">Active request communication</p>
+                  <h2>Messages</h2>
+                </div>
+                <span id="adminActiveMessageCount">0 Open</span>
+              </div>
+              <p class="payment-note">Customer and driver conversations are view-only for administration. Use the separate private chats to contact the driver or customer directly.</p>
+              <div id="adminMessagesBoard"></div>
+            </article>
+          </section>
         </section>
 
         <section class="admin-page" id="adminPay">
@@ -611,52 +1171,136 @@
         </section>
         </section>
 
+        <section class="admin-page" id="adminDaily">
+        <section class="admin-layout">
+          <article class="admin-panel">
+            <div class="section-heading compact">
+              <h2>Daily update files</h2>
+              <span id="dailyUpdateStamp">Last Daily Update: Not run yet</span>
+            </div>
+            <div class="daily-toast" id="dailyUpdateToast" aria-live="polite"></div>
+            <div id="dailyUpdateBoard"></div>
+            <button class="checkout-button daily-update-button" id="runDailyUpdateButton" type="button">
+              Run daily update
+            </button>
+            <div class="daily-update-status" id="dailyUpdateStatus"></div>
+          </article>
+
+          <aside class="admin-panel">
+            <div class="section-heading compact">
+              <h2>Daily Archive</h2>
+              <span>OneDrive ready</span>
+            </div>
+            <div id="archiveLogBoard"></div>
+          </aside>
+        </section>
+        </section>
+
+        <section class="admin-page" id="adminCatalog">
+          <section class="admin-layout">
+            <article class="admin-panel">
+              <div class="section-heading compact">
+                <div>
+                  <p class="eyebrow">Completed-order learning</p>
+                  <h2>Product Catalog Review</h2>
+                </div>
+                <span id="catalogLearningPendingCount">0 Pending</span>
+              </div>
+              <p class="payment-note">Hand-typed products from completed orders stay private inside Hope's & Go. Review them monthly before adding them to customer search.</p>
+              <button class="checkout-button" id="runCatalogLearningReview" type="button">Review Completed Orders</button>
+              <div class="daily-update-status" id="catalogLearningStatus" aria-live="polite"></div>
+            </article>
+
+            <aside class="admin-panel">
+              <div class="section-heading compact">
+                <h2>Catalog Status</h2>
+                <span>Monthly</span>
+              </div>
+              <div id="catalogLearningSummary"></div>
+            </aside>
+          </section>
+
+          <section class="admin-panel">
+            <div class="section-heading compact">
+              <div>
+                <p class="eyebrow">Items not auto-selected</p>
+                <h2>Products to Review</h2>
+              </div>
+              <span>Most requested first</span>
+            </div>
+            <div id="catalogLearningBoard"></div>
+          </section>
+        </section>
+
+        <section class="admin-page" id="adminExports">
+        <section class="admin-layout">
+          <article class="admin-panel">
+            <div class="section-heading compact">
+              <h2>Export Center</h2>
+              <span>Generate on demand</span>
+            </div>
+            <div id="exportCenter"></div>
+          </article>
+
+          <aside class="admin-panel">
+            <div class="section-heading compact">
+              <h2>Export Notes</h2>
+              <span>Standard daily files</span>
+            </div>
+            <div id="exportNotes"></div>
+          </aside>
+        </section>
+        </section>
+
         <section class="admin-page" id="adminSystems">
         <section class="admin-layout">
           <article class="admin-panel">
             <div class="section-heading compact">
-              <h2>Hiring and payroll</h2>
-              <span>ADP + Xero</span>
+              <h2>Connected systems</h2>
+              <span>Login links</span>
             </div>
             <div id="payrollBoard"></div>
           </article>
 
           <aside class="admin-panel">
             <div class="section-heading compact">
-              <h2>Team communication</h2>
-              <span>Options</span>
+              <h2>Integration setup</h2>
+              <span>Ready list</span>
             </div>
             <div id="communicationBoard"></div>
           </aside>
         </section>
         </section>
 
-        <section class="admin-page" id="adminPolicies">
-        <section class="admin-layout policy-layout">
-          <article class="admin-panel">
-            <div class="section-heading compact">
-              <h2>Refund and order policies</h2>
-              <span>Draft rules</span>
-            </div>
-            <div id="policyBoard"></div>
-          </article>
+      </section>
 
-          <aside class="admin-panel">
-            <div class="section-heading compact">
-              <h2>Business planning</h2>
-              <span>Loan prep</span>
+      <section class="admin-preview-modal" id="adminPreviewModal" role="dialog" aria-modal="true" aria-labelledby="adminPreviewTitle" hidden>
+        <div class="admin-preview-shell">
+          <header class="admin-preview-toolbar">
+            <div>
+              <p class="eyebrow">Admin visual check</p>
+              <h2 id="adminPreviewTitle">Customer website preview</h2>
             </div>
-            <div class="integration-list">
-              <div><strong>Use Xero as the financial hub</strong><span>Connect bank, Stripe, and ADP so reporting is ready for bookkeeping, taxes, and lender documents.</span></div>
-              <div><strong>Keep loan materials together</strong><span>Business plan, loan proposal, EIN, LLC paperwork, banking info, policies, and service pricing.</span></div>
-              <div><strong>Best visual direction</strong><span>Use branded delivery photos and a Burlington service-area map for marketing strategy and loan materials.</span></div>
+            <div class="admin-preview-size-controls" role="group" aria-label="Preview screen size">
+              <button class="active" type="button" data-preview-size="website">Website</button>
+              <button type="button" data-preview-size="mobile">Mobile</button>
             </div>
-          </aside>
-        </section>
-        </section>
+            <button class="admin-preview-close" id="adminPreviewClose" type="button" aria-label="Close website preview">&times;</button>
+          </header>
+          <p class="admin-preview-help" id="adminPreviewHelp">Website view uses the available laptop width.</p>
+          <div class="admin-preview-stage" id="adminPreviewStage" data-preview-size="website">
+            <iframe id="adminPreviewFrame" title="Customer website preview" loading="lazy"></iframe>
+          </div>
+        </div>
       </section>
     </main>
 
+    <script>
+      window.HOPES_GO_MAPBOX_TOKEN = window.HOPES_GO_MAPBOX_TOKEN || "";
+      window.HOPES_GO_CUSTOMER_TEST_MODE = window.HOPES_GO_CUSTOMER_TEST_MODE === true;
+    </script>
+    <script src="client-config.js"></script>
+    <script src="auto-approval.js"></script>
     <script src="script.js"></script>
   </body>
 </html>

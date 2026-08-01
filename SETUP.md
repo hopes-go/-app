@@ -47,3 +47,20 @@ Open:
 ```text
 http://localhost:3000
 ```
+
+## 5. Restaurant Marketplace Pilot
+
+The restaurant partner login appears inside **Driver/Admin Login**. For local testing, the server creates one pilot account the first time it starts:
+
+- Username: `pilotrestaurant`
+- Temporary password: `Pilot123!`
+
+Before giving the account to a restaurant, set unique `PILOT_RESTAURANT_*` values in `config/.env` using `.env.example`. Delete `.data/restaurant-state.json` once to recreate the pilot account with those new settings. Never use the temporary password on a live website.
+
+Add the restaurant's Stripe connected-account ID as `PILOT_RESTAURANT_STRIPE_ACCOUNT_ID`. Until this is present, the public menu can be tested but restaurant checkout intentionally remains unavailable.
+
+At checkout, the server re-reads the current menu prices and calculates the split. The restaurant receives the food subtotal plus its configured food tax. Hope's & Go retains its service and add-on charges and the driver tip before Stripe processing fees. Confirm the correct food-tax rate with a tax professional before accepting live orders.
+
+The restaurant editor supports store details, daily hours, menu items, prices, availability, food pictures, and weekly deals. Saving publishes changes directly to the customer restaurant page.
+
+Before production, apply `supabase/schema.sql` so restaurant data and restaurant order lines are stored in Supabase rather than the local pilot data file.

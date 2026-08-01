@@ -1,10 +1,11 @@
-const CACHE_NAME = "hopes-go-v1";
+const CACHE_NAME = "hopes-go-v22";
 const APP_FILES = [
   "./",
   "./index.html",
   "./styles.css",
   "./script.js",
   "./manifest.json",
+  "./assets/favicon.svg",
   "./assets/logo.png",
   "./assets/hero-business.png",
   "./assets/pickup-delivery.png",
@@ -21,6 +22,15 @@ const APP_FILES = [
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_FILES)));
+  self.skipWaiting();
+});
+
+self.addEventListener("activate", (event) => {
+  event.waitUntil(
+    caches.keys()
+      .then((names) => Promise.all(names.filter((name) => name !== CACHE_NAME).map((name) => caches.delete(name))))
+      .then(() => self.clients.claim())
+  );
 });
 
 self.addEventListener("fetch", (event) => {
