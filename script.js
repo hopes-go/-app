@@ -638,8 +638,7 @@ const approvedDriverLogins = [
 ];
 
 const approvedAdminLogins = [
-  { username: "hope_admin", name: "Hope", code: "Admin18909!", role: "admin" },
-  { username: "hope_go", name: "Hope", code: "Milo_Go18909!", role: "owner" },
+  { username: "hope_go", name: "Hope", role: "owner" },
 ];
 
 const restaurantLoginForm = document.querySelector("#restaurantLoginForm");
@@ -3292,7 +3291,7 @@ async function startStripeCheckout() {
   }
 
   if (!termsAccepted.checked) {
-    checkoutStatus.textContent = "Please accept the Terms of Service and refund policies before checkout.";
+    checkoutStatus.textContent = "Please accept the Terms of Service and the cancellation/refund policy before checkout.";
     return;
   }
 
@@ -7328,6 +7327,49 @@ driverRoleLoginForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const username = driverRoleLoginName.value.trim().toLowerCase();
   const code = driverRoleAccessCode.value.trim();
+
+  // Admin and owner credentials are verified server-side so live secrets are
+  // never shipped in the browser bundle.
+  try {
+    const adminResponse = await fetch(apiUrl("/api/admin/restaurant-login"), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ username, accessCode: code }) });
+    const adminData = await adminResponse.json();
+    if (adminResponse.ok) {
+      restaurantAdminToken = adminData.token;
+      sessionStorage.setItem("hopesGoRestaurantAdminToken", adminData.token);
+      localStorage.setItem("hopesGoAdminName", adminData.name || "Hope");
+      if (adminData.role === "owner") {
+        currentEmployee = adminData.name || "Hope";
+        localStorage.setItem("hopesGoCurrentEmployee", currentEmployee);
+        setRole("owner");
+        loadOwnerMockCustomer();
+        setCustomerPage("customerServices");
+        renderEmployeeViews();
+        renderAvailability();
+      } else {
+        setRole("admin");
+      }
+      driverRoleLoginStatus.textContent = "";
+      setActiveView("admin");
+      return;
+    }
+  } catch {}
+
+  try {
+    const driverResponse = await fetch(apiUrl("/api/driver/login"), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ username, password: code }) });
+    const driverData = await driverResponse.json();
+    if (driverResponse.ok) {
+      currentEmployee = driverData.driver.name;
+      sessionStorage.setItem("hopesGoDriverToken", driverData.token);
+      localStorage.setItem("hopesGoCurrentEmployee", currentEmployee);
+      driverRoleLoginStatus.textContent = "";
+      setRole("driver");
+      renderEmployeeViews();
+      renderAvailability();
+      setActiveView("employee");
+      return;
+    }
+  } catch {}
+
   const staffLogin = [...approvedDriverLogins, ...approvedAdminLogins].find(
     (login) =>
       login.username.toLowerCase() === username &&
@@ -7340,18 +7382,6 @@ driverRoleLoginForm.addEventListener("submit", async (event) => {
   }
 
   driverRoleLoginStatus.textContent = "";
-  if (staffLogin.role === "admin") {
-    try {
-      const response = await fetch(apiUrl("/api/admin/restaurant-login"), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ username, accessCode: code }) });
-      const data = await response.json();
-      if (response.ok) { restaurantAdminToken = data.token; sessionStorage.setItem("hopesGoRestaurantAdminToken", data.token); }
-    } catch {}
-    localStorage.setItem("hopesGoAdminName", staffLogin.name);
-    setRole("admin");
-    setActiveView("admin");
-    return;
-  }
-
   if (staffLogin.role === "owner") {
     try {
       const response = await fetch(apiUrl("/api/admin/restaurant-login"), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ username, accessCode: code }) });
