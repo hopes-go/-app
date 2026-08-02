@@ -811,19 +811,38 @@ function defaultRestaurantState() {
       username,
       passwordSalt: salt,
       passwordHash: hash,
-      storeName: "Restaurant",
-      description: "Partner restaurant menu coming soon.",
-      address: "",
-      phone: "",
+      storeName: "Jerry's Main Lunch",
+      description: "Fresh, filling lunch favorites prepared for easy pickup and delivery.",
+      address: "Downtown Burlington, IA",
+      phone: "(319) 555-0142",
       logo: "",
       coverImage: "",
       stripeAccountId: String(process.env.PILOT_RESTAURANT_STRIPE_ACCOUNT_ID || ""),
       stripeReady: Boolean(process.env.PILOT_RESTAURANT_STRIPE_ACCOUNT_ID),
       active: true,
       foodTaxRate: Number(process.env.PILOT_RESTAURANT_FOOD_TAX_RATE || 0.07),
-      hours: Object.fromEntries(availabilityDays.map((day) => [day, "Closed"])),
-      weeklyDeals: [],
-      menu: [],
+      hours: {
+        Monday: "11:00 AM - 2:00 PM",
+        Tuesday: "11:00 AM - 2:00 PM",
+        Wednesday: "11:00 AM - 2:00 PM",
+        Thursday: "11:00 AM - 2:00 PM",
+        Friday: "11:00 AM - 2:00 PM",
+        Saturday: "Closed",
+        Sunday: "Closed",
+      },
+      weeklyDeals: [
+        { id: "demo-deal-1", title: "Lunch Combo Wednesday", description: "Any sandwich, side, and drink for $12.99.", active: true },
+        { id: "demo-deal-2", title: "Friday Soup Special", description: "Add a cup of soup to any lunch for $2.50.", active: true },
+      ],
+      menu: [
+        { id: "demo-turkey-club", name: "Turkey Club Sandwich", description: "Roasted turkey, bacon, lettuce, tomato, and mayo on toasted wheat.", category: "Sandwiches", price: 10.99, active: true, image: "" },
+        { id: "demo-chicken-wrap", name: "Grilled Chicken Wrap", description: "Grilled chicken, cheddar, lettuce, tomato, and ranch in a flour wrap.", category: "Sandwiches", price: 9.99, active: true, image: "" },
+        { id: "demo-tomato-soup", name: "Homestyle Tomato Soup", description: "Creamy tomato soup topped with herbs and cracked pepper.", category: "Soups & Salads", price: 5.49, active: true, image: "" },
+        { id: "demo-house-salad", name: "Main Street House Salad", description: "Crisp greens, cucumber, tomato, shredded cheese, and choice of dressing.", category: "Soups & Salads", price: 7.99, active: true, image: "" },
+        { id: "demo-chips", name: "Kettle Chips", description: "A crunchy side of lightly salted kettle chips.", category: "Sides", price: 2.49, active: true, image: "" },
+        { id: "demo-cookie", name: "Fresh-Baked Cookie", description: "Soft chocolate chip cookie baked fresh for lunch.", category: "Desserts", price: 2.25, active: true, image: "" },
+        { id: "demo-iced-tea", name: "Iced Tea", description: "Fresh-brewed sweet or unsweet tea.", category: "Drinks", price: 2.49, active: true, image: "" },
+      ],
       updatedAt: new Date().toISOString(),
     }],
   };
@@ -832,12 +851,31 @@ function defaultRestaurantState() {
 function loadRestaurantState() {
   try {
     const saved = JSON.parse(fs.readFileSync(restaurantStatePath, "utf8"));
-    if (Array.isArray(saved.restaurants)) return saved;
+    if (Array.isArray(saved.restaurants)) {
+      const pilot = saved.restaurants.find((restaurant) => restaurant.id === "pilot-restaurant");
+      if (pilot && pilot.storeName === "Restaurant" && !(pilot.menu || []).length) {
+        const demo = defaultRestaurantState().restaurants[0];
+        Object.assign(pilot, demo, {
+          username: pilot.username || demo.username,
+          passwordSalt: pilot.passwordSalt || demo.passwordSalt,
+          passwordHash: pilot.passwordHash || demo.passwordHash,
+          stripeAccountId: pilot.stripeAccountId || demo.stripeAccountId,
+          stripeReady: Boolean(pilot.stripeReady || demo.stripeReady),
+        });
+        saveRestaurantStateFile(saved);
+      }
+      return saved;
+    }
   } catch {}
   const initial = defaultRestaurantState();
   fs.mkdirSync(path.dirname(restaurantStatePath), { recursive: true });
-  fs.writeFileSync(restaurantStatePath, JSON.stringify(initial, null, 2));
+  saveRestaurantStateFile(initial);
   return initial;
+}
+
+function saveRestaurantStateFile(state) {
+  fs.mkdirSync(path.dirname(restaurantStatePath), { recursive: true });
+  fs.writeFileSync(restaurantStatePath, JSON.stringify(state, null, 2));
 }
 
 let restaurantState = loadRestaurantState();
@@ -854,8 +892,7 @@ function saveRestaurantOrders() {
 }
 
 function saveRestaurantState() {
-  fs.mkdirSync(path.dirname(restaurantStatePath), { recursive: true });
-  fs.writeFileSync(restaurantStatePath, JSON.stringify(restaurantState, null, 2));
+  saveRestaurantStateFile(restaurantState);
 }
 
 function issueRestaurantSession(restaurantId) {
