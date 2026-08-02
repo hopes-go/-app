@@ -5293,7 +5293,7 @@ function completeAcceptedJob() {
     tips,
     tipSourceType: acceptedDriverJob.restaurantId || acceptedDriverJob.restaurantName ? "partner-restaurant" : "delivery-service",
     tipSource: acceptedDriverJob.restaurantName ? `Partner restaurant: ${acceptedDriverJob.restaurantName}` : "Hope's & Go delivery",
-    tipTransferStatus: tips > 0 ? "Queued for automatic bank transfer" : "No tip transfer",
+    tipTransferStatus: tips > 0 ? "Pending automatic bank transfer" : "No tip transfer",
     status: tips > 0 ? "Tip transfer queued" : "No tips",
     submitted: false,
     completedAt,
