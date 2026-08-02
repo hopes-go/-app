@@ -1483,6 +1483,9 @@ function getCityAnchorCoordinates(address) {
   const normalizedAddress = normalizeSearchText(address);
   const cityAnchors = [
     { names: ["west burlington"], coordinates: [-91.1565, 40.825] },
+    { names: ["stronghurst"], coordinates: [-90.9137, 40.7495] },
+    { names: ["dallas city"], coordinates: [-91.1668, 40.6431] },
+    { names: ["gladstone"], coordinates: [-90.9701, 40.8648] },
     { names: ["fort madison"], coordinates: [-91.3152, 40.6298] },
     { names: ["mount pleasant", "mt pleasant"], coordinates: [-91.5521, 40.9636] },
     { names: ["new london"], coordinates: [-91.3996, 40.9267] },
@@ -3340,6 +3343,11 @@ async function startStripeCheckout() {
   const validationMessage = getRequestValidationMessage();
   if (validationMessage) {
     checkoutStatus.textContent = validationMessage;
+    const serviceAreaRequirement = getDeliveryServiceAreaRequirement();
+    if (serviceAreaRequirement.required) {
+      serviceAreaReturnPage = "customerCheckout";
+      setCustomerPage("customerAreas");
+    }
     return;
   }
 
