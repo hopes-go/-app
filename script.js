@@ -372,6 +372,7 @@ const deliveryPinCard = document.querySelector("#deliveryPinCard");
 const embeddedCheckoutShell = document.querySelector("#embeddedCheckoutShell");
 const embeddedCheckout = document.querySelector("#embeddedCheckout");
 const embeddedCheckoutTotal = document.querySelector("#embeddedCheckoutTotal");
+const nonPartnerPaymentCard = document.querySelector("#nonPartnerPaymentCard");
 const customerStepEyebrow = document.querySelector("#customerStepEyebrow");
 const customerStepTitle = document.querySelector("#customerStepTitle");
 const customerNextButtons = document.querySelectorAll("[data-customer-next]");
@@ -2566,6 +2567,8 @@ function getCartPayload() {
     taxRate: totals.taxRate,
     taxArea: totals.taxArea,
     restaurantOrder: getRestaurantOrderPayload(),
+    paymentMethod: isNonPartnerRequest() ? (document.querySelector("#nonPartnerPaymentMethod")?.value || "") : "stripe",
+    externalPaymentConfirmed: Boolean(document.querySelector("#nonPartnerPaymentConfirmed")?.checked),
     shopping: {
       items: parseShoppingItems(),
       products: selectedShoppingProducts.map((product) => ({ ...product })),
@@ -2685,9 +2688,30 @@ function renderCheckoutCarryover() {
   }
 
   if (checkoutPaymentNotice) {
-    checkoutPaymentNotice.textContent = selectedShopAndDeliver()
+    checkoutPaymentNotice.textContent = isNonPartnerRequest()
+      ? "This pickup location is not a Hope's & Go restaurant partner. Pay the restaurant and delivery total through one of the external payment options below."
+      : selectedShopAndDeliver()
       ? "No charge until Hope's & Go accepts your request. Unused shopping estimate funds are refunded immediately when shopping is completed."
       : "No charge until Hope's & Go accepts your request.";
+  }
+
+  if (nonPartnerPaymentCard) {
+    nonPartnerPaymentCard.hidden = !isNonPartnerRequest();
+    if (isNonPartnerRequest()) {
+      const links = window.HOPES_GO_NON_PARTNER_PAYMENTS || {};
+      nonPartnerPaymentCard.innerHTML = `
+        <h3>Non-partner pickup payment</h3>
+        <p>Pay the full order through one option below, then confirm which option you used. Hope's & Go will review the payment before dispatch.</p>
+        <div class="external-payment-links">
+          ${links.cashApp ? `<a class="secondary-admin-action" href="${escapeHtml(links.cashApp)}" target="_blank" rel="noreferrer">Pay with Cash App</a>` : ""}
+          ${links.venmo ? `<a class="secondary-admin-action" href="${escapeHtml(links.venmo)}" target="_blank" rel="noreferrer">Pay with Venmo</a>` : ""}
+          ${links.paypal ? `<a class="secondary-admin-action" href="${escapeHtml(links.paypal)}" target="_blank" rel="noreferrer">Pay with PayPal</a>` : ""}
+        </div>
+        <label for="nonPartnerPaymentMethod">Payment option used</label>
+        <select id="nonPartnerPaymentMethod"><option value="">Choose one</option><option value="cashapp">Cash App</option><option value="venmo">Venmo</option><option value="paypal">PayPal</option></select>
+        <label class="terms-check"><input id="nonPartnerPaymentConfirmed" type="checkbox" /> <span>I completed the external payment and understand the order will be reviewed before dispatch.</span></label>
+      `;
+    }
   }
 
   checkoutCarryover.innerHTML = "";
@@ -2697,6 +2721,10 @@ function renderCheckoutCarryover() {
         ? `<h3>Delivery Code</h3><div class="delivery-code-badge">${pin}</div><p>Give this code to your driver at handoff.</p>`
         : `<h3>Delivery Code</h3><div class="delivery-code-badge">Photo</div><p>No-contact delivery selected. Your driver will upload a drop-off photo.</p>`;
   }
+}
+
+function isNonPartnerRequest() {
+  return Boolean(customPickupDetailsCollected && !selectedRestaurantOrder);
 }
 
 function renderCustomerAccountPage() {
@@ -2948,6 +2976,8 @@ function createRequestRecord(payload) {
     testMode: Boolean(payload.testMode || customerTestingMode),
     paymentValidation: payload.testMode || customerTestingMode ? "Test mode - not validated" : "Pending authorization",
     riskSummary: payload.testMode || customerTestingMode ? "No live Stripe risk check" : "Waiting for Stripe",
+    paymentMethod: payload.paymentMethod || "stripe",
+    externalPaymentConfirmed: Boolean(payload.externalPaymentConfirmed),
   };
   recordMembershipUsageFromCart();
   requests.unshift(request);
@@ -3292,6 +3322,23 @@ async function startStripeCheckout() {
 
   if (!termsAccepted.checked) {
     checkoutStatus.textContent = "Please accept the Terms of Service and the cancellation/refund policy before checkout.";
+    return;
+  }
+
+  if (isNonPartnerRequest()) {
+    if (!payload.paymentMethod || !payload.externalPaymentConfirmed) {
+      checkoutStatus.textContent = "Choose Cash App, Venmo, or PayPal and confirm that the external payment was completed.";
+      return;
+    }
+    const request = createRequestRecord(payload);
+    request.status = "External payment review";
+    request.paymentValidation = `Customer reported ${payload.paymentMethod} payment; awaiting admin review`;
+    request.riskSummary = "External payment is not automatically verified";
+    saveRequests();
+    renderAdminBoards();
+    checkoutStatus.textContent = "Payment noted. Hope's & Go will review the external payment before dispatch.";
+    checkoutButton.disabled = true;
+    checkoutButton.textContent = "Payment submitted for review";
     return;
   }
 
