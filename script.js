@@ -5161,6 +5161,7 @@ function renderDriverPay() {
   const records = driverPayRecords.filter((record) => record.driver.toLowerCase() === currentEmployee.toLowerCase());
   const servicePay = records.reduce((sum, record) => sum + record.driverShare, 0);
   const tips = records.reduce((sum, record) => sum + record.tips, 0);
+  const partnerTips = records.filter((record) => record.tipSourceType === "partner-restaurant").reduce((sum, record) => sum + Number(record.tips || 0), 0);
   const completedJobs = records.length;
   const container = document.querySelector("#driverPayDetails");
 
@@ -5170,9 +5171,10 @@ function renderDriverPay() {
       <article><span>Estimated Earnings</span><strong>${money(servicePay + tips)}</strong></article>
       <article><span>Completed Jobs</span><strong>${completedJobs}</strong></article>
       <article><span>Tips</span><strong>${money(tips)}</strong></article>
+      <article><span>Partner restaurant tips</span><strong>${money(partnerTips)}</strong></article>
       <article><span>Payroll Status</span><strong>${records.length ? "Pending payroll review" : "No payroll records yet"}</strong></article>
     </div>
-    <p class="payment-note">This page is informational only. Payroll actions will appear here only after a real payroll function is connected.</p>
+    <p class="payment-note">Partner restaurant tips are tracked separately from service pay. Each tip record shows its automatic bank-transfer status.</p>
     ${records
       .map(
         (record) => `
@@ -5182,7 +5184,8 @@ function renderDriverPay() {
               <span class="pill">${record.status}</span>
             </div>
             <p>Service pay: ${money(record.driverShare)} from ${money(record.serviceFee)} service fee</p>
-            <p>Tips: ${money(record.tips)}</p>
+            <p>Tip: ${money(record.tips)} ${record.tipSourceType === "partner-restaurant" ? `from ${escapeHtml(record.tipSource || "partner restaurant")}` : ""}</p>
+            ${Number(record.tips || 0) > 0 ? `<p><strong>Bank transfer:</strong> ${escapeHtml(record.tipTransferStatus || "Automatic transfer pending")}</p>` : ""}
           </div>
         `
       )
@@ -5288,7 +5291,10 @@ function completeAcceptedJob() {
     serviceFee,
     driverShare,
     tips,
-    status: tips > 0 ? "Tips held" : "No tips",
+    tipSourceType: acceptedDriverJob.restaurantId || acceptedDriverJob.restaurantName ? "partner-restaurant" : "delivery-service",
+    tipSource: acceptedDriverJob.restaurantName ? `Partner restaurant: ${acceptedDriverJob.restaurantName}` : "Hope's & Go delivery",
+    tipTransferStatus: tips > 0 ? "Queued for automatic bank transfer" : "No tip transfer",
+    status: tips > 0 ? "Tip transfer queued" : "No tips",
     submitted: false,
     completedAt,
   });
