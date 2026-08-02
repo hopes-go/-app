@@ -816,7 +816,7 @@ function defaultRestaurantState() {
       address: "Downtown Burlington, IA",
       phone: "(319) 555-0142",
       logo: "",
-      coverImage: "",
+      coverImage: "/assets/demo-jerrys-main-lunch-menu.jpg",
       stripeAccountId: String(process.env.PILOT_RESTAURANT_STRIPE_ACCOUNT_ID || ""),
       stripeReady: Boolean(process.env.PILOT_RESTAURANT_STRIPE_ACCOUNT_ID),
       active: true,
@@ -831,17 +831,30 @@ function defaultRestaurantState() {
         Sunday: "Closed",
       },
       weeklyDeals: [
-        { id: "demo-deal-1", title: "Lunch Combo Wednesday", description: "Any sandwich, side, and drink for $12.99.", active: true },
-        { id: "demo-deal-2", title: "Friday Soup Special", description: "Add a cup of soup to any lunch for $2.50.", active: true },
+        { id: "demo-deal-1", title: "Weekly Specials · July 20–24, 2026", description: "A sample weekly menu entered from Jerry's printed specials sheet.", active: true },
+        { id: "demo-deal-2", title: "Burger of the Week", description: "Grilled Cheese Bacon Burger: 1/4 lb $6.55 or 1/2 lb $8.55.", active: true },
+        { id: "demo-deal-3", title: "Drink of the Week", description: "Creamsicle Float · $3.95", active: true },
+        { id: "demo-deal-4", title: "Sunday Special", description: "Early Riser — sausage, egg, and cheese on a bun · $4.55", active: true },
       ],
       menu: [
-        { id: "demo-turkey-club", name: "Turkey Club Sandwich", description: "Roasted turkey, bacon, lettuce, tomato, and mayo on toasted wheat.", category: "Sandwiches", price: 10.99, active: true, image: "" },
-        { id: "demo-chicken-wrap", name: "Grilled Chicken Wrap", description: "Grilled chicken, cheddar, lettuce, tomato, and ranch in a flour wrap.", category: "Sandwiches", price: 9.99, active: true, image: "" },
-        { id: "demo-tomato-soup", name: "Homestyle Tomato Soup", description: "Creamy tomato soup topped with herbs and cracked pepper.", category: "Soups & Salads", price: 5.49, active: true, image: "" },
-        { id: "demo-house-salad", name: "Main Street House Salad", description: "Crisp greens, cucumber, tomato, shredded cheese, and choice of dressing.", category: "Soups & Salads", price: 7.99, active: true, image: "" },
-        { id: "demo-chips", name: "Kettle Chips", description: "A crunchy side of lightly salted kettle chips.", category: "Sides", price: 2.49, active: true, image: "" },
-        { id: "demo-cookie", name: "Fresh-Baked Cookie", description: "Soft chocolate chip cookie baked fresh for lunch.", category: "Desserts", price: 2.25, active: true, image: "" },
-        { id: "demo-iced-tea", name: "Iced Tea", description: "Fresh-brewed sweet or unsweet tea.", category: "Drinks", price: 2.49, active: true, image: "" },
+        { id: "demo-mon-meatloaf", name: "Meatloaf Dinner", description: "Monday special.", category: "Monday Specials", price: 9.60, active: true, image: "" },
+        { id: "demo-mon-seafood-salad", name: "Seafood Salad Sandwich", description: "Monday special.", category: "Monday Specials", price: 5.95, active: true, image: "" },
+        { id: "demo-mon-chicken-tortilla", name: "Chicken Tortilla", description: "Monday special.", category: "Monday Specials", price: 4.95, active: true, image: "" },
+        { id: "demo-tue-goulash", name: "Goulash with Bread & Butter", description: "Tuesday special; garlic toast available.", category: "Tuesday Specials", price: 5.50, active: true, image: "" },
+        { id: "demo-tue-beef-noodles", name: "Beef & Noodles over Mashed or Biscuit", description: "Tuesday special.", category: "Tuesday Specials", price: 9.60, active: true, image: "" },
+        { id: "demo-tue-cheeseburger-wrap", name: "Cheeseburger Wrap", description: "Tuesday special.", category: "Tuesday Specials", price: 7.25, active: true, image: "" },
+        { id: "demo-wed-enchilada", name: "Chicken Enchilada with Salad, Chips & Salsa", description: "Wednesday special.", category: "Wednesday Specials", price: 9.60, active: true, image: "" },
+        { id: "demo-wed-soup", name: "Hamburger Soup", description: "Wednesday special.", category: "Wednesday Specials", price: 4.95, active: true, image: "" },
+        { id: "demo-wed-manwich", name: "Manwich on Garlic Toast with Mac & Cheese", description: "Wednesday special.", category: "Wednesday Specials", price: 8.00, active: true, image: "" },
+        { id: "demo-thu-steak", name: "Country Fried Steak Dinner", description: "Thursday special.", category: "Thursday Specials", price: 9.60, active: true, image: "" },
+        { id: "demo-thu-ham-swiss", name: "Grilled Ham & Swiss with Cold Side", description: "Thursday special.", category: "Thursday Specials", price: 7.60, active: true, image: "" },
+        { id: "demo-fri-ham-beans", name: "Ham & Beans with Corn Bread", description: "Friday special.", category: "Friday Specials", price: 5.25, active: true, image: "" },
+        { id: "demo-fri-frogleg", name: "Frogleg Dinner", description: "Friday special.", category: "Friday Specials", price: 9.60, active: true, image: "" },
+        { id: "demo-fri-taco", name: "Taco or Taco Salad", description: "Friday special.", category: "Friday Specials", price: 7.25, active: true, image: "" },
+        { id: "demo-burger-quarter", name: "Grilled Cheese Bacon Burger · 1/4 lb", description: "Burger of the week.", category: "Weekly Features", price: 6.55, active: true, image: "" },
+        { id: "demo-burger-half", name: "Grilled Cheese Bacon Burger · 1/2 lb", description: "Burger of the week.", category: "Weekly Features", price: 8.55, active: true, image: "" },
+        { id: "demo-creamsicle", name: "Creamsicle Float", description: "Drink of the week.", category: "Weekly Features", price: 3.95, active: true, image: "" },
+        { id: "demo-early-riser", name: "Early Riser — Sausage, Egg & Cheese on Bun", description: "Sunday special.", category: "Sunday Special", price: 4.55, active: true, image: "" },
       ],
       updatedAt: new Date().toISOString(),
     }],
@@ -853,7 +866,8 @@ function loadRestaurantState() {
     const saved = JSON.parse(fs.readFileSync(restaurantStatePath, "utf8"));
     if (Array.isArray(saved.restaurants)) {
       const pilot = saved.restaurants.find((restaurant) => restaurant.id === "pilot-restaurant");
-      if (pilot && pilot.storeName === "Restaurant" && !(pilot.menu || []).length) {
+      const hasLegacyDemoMenu = pilot && (pilot.menu || []).some((item) => item.id === "demo-turkey-club");
+      if (pilot && ((pilot.storeName === "Restaurant" && !(pilot.menu || []).length) || hasLegacyDemoMenu)) {
         const demo = defaultRestaurantState().restaurants[0];
         Object.assign(pilot, demo, {
           username: pilot.username || demo.username,
@@ -1320,10 +1334,17 @@ app.get("/api/restaurants/:id", (req, res) => {
 
 app.post("/api/admin/restaurant-login", (req, res) => {
   const username = String(req.body.username || "").trim().toLowerCase();
-  const accessCode = String(req.body.accessCode || "");
+  const accessCode = String(req.body.accessCode || "").trim();
+  const configuredValue = (...names) => {
+    for (const name of names) {
+      const value = String(process.env[name] || "").trim();
+      if (value) return value;
+    }
+    return "";
+  };
   const allowedLogins = [
-    { username: String(process.env.HOPES_GO_ADMIN_USERNAME || "").toLowerCase(), code: String(process.env.HOPES_GO_ADMIN_ACCESS_CODE || ""), role: "admin", name: "Hope" },
-    { username: String(process.env.HOPES_GO_OWNER_USERNAME || "").toLowerCase(), code: String(process.env.HOPES_GO_OWNER_ACCESS_CODE || ""), role: "owner", name: "Hope" },
+    { username: configuredValue("HOPES_GO_ADMIN_USERNAME", "ADMIN_USERNAME").toLowerCase(), code: configuredValue("HOPES_GO_ADMIN_ACCESS_CODE", "ADMIN_ACCESS_CODE"), role: "admin", name: "Hope" },
+    { username: configuredValue("HOPES_GO_OWNER_USERNAME", "OWNER_USERNAME").toLowerCase(), code: configuredValue("HOPES_GO_OWNER_ACCESS_CODE", "OWNER_ACCESS_CODE"), role: "owner", name: "Hope" },
   ];
   const matchedLogin = allowedLogins.find((login) => login.username && login.code && login.username === username && login.code === accessCode);
   if (!matchedLogin) {

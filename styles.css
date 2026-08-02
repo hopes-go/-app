@@ -4211,6 +4211,11 @@ th {
 }
 
 @media (max-width: 720px) {
+  /* Keep the decorative login background inside the phone viewport. */
+  .login-hero::before {
+    width: 100%;
+  }
+
   .owner-status-summary {
     grid-template-columns: 1fr;
   }
