@@ -373,6 +373,8 @@ const embeddedCheckoutShell = document.querySelector("#embeddedCheckoutShell");
 const embeddedCheckout = document.querySelector("#embeddedCheckout");
 const embeddedCheckoutTotal = document.querySelector("#embeddedCheckoutTotal");
 const nonPartnerPaymentCard = document.querySelector("#nonPartnerPaymentCard");
+const nonPartnerOrderEntry = document.querySelector("#nonPartnerOrderEntry");
+const nonPartnerOrderTotalInput = document.querySelector("#nonPartnerOrderTotalInput");
 const customerStepEyebrow = document.querySelector("#customerStepEyebrow");
 const customerStepTitle = document.querySelector("#customerStepTitle");
 const customerNextButtons = document.querySelectorAll("[data-customer-next]");
@@ -501,6 +503,8 @@ let shoppingProductSearchTimer = null;
 let shoppingProductSearchSequence = 0;
 let shoppingStoreSelectionKey = "";
 let tipStepSeen = false;
+let nonPartnerOrderTotal = 0;
+let nonPartnerPaymentMethod = "";
 let customerLoginMode = "signup";
 let pendingCustomerVerification = null;
 let latestOperationsStatus = null;
@@ -1942,6 +1946,7 @@ function getCartTotals() {
   const entries = [...cart.values()];
   const tip = getTipAmount();
   const restaurantFood = getRestaurantFoodTotals();
+  const nonPartnerFoodTotal = isNonPartnerRequest() ? Math.max(0, Number(nonPartnerOrderTotal || 0)) : 0;
   const totalItems = entries.reduce((sum, item) => sum + item.quantity, 0) + restaurantFood.totalItems;
   const regularSubtotal = entries.reduce((sum, item) => sum + item.service.price * item.quantity, 0);
   const subtotal = entries.reduce((sum, item) => sum + getServiceLineTotal(item.service, item.quantity), 0);
@@ -1987,7 +1992,8 @@ function getCartTotals() {
     shoppingHold,
     restaurantFoodSubtotal: restaurantFood.subtotal,
     restaurantFoodTax: restaurantFood.tax,
-    total: taxableSubtotal + tax + tip + shoppingHold + restaurantFood.subtotal + restaurantFood.tax,
+    nonPartnerOrderTotal: nonPartnerFoodTotal,
+    total: taxableSubtotal + tax + tip + shoppingHold + restaurantFood.subtotal + restaurantFood.tax + nonPartnerFoodTotal,
   };
 }
 
@@ -2567,7 +2573,8 @@ function getCartPayload() {
     taxRate: totals.taxRate,
     taxArea: totals.taxArea,
     restaurantOrder: getRestaurantOrderPayload(),
-    paymentMethod: isNonPartnerRequest() ? (document.querySelector("#nonPartnerPaymentMethod")?.value || "") : "stripe",
+    nonPartnerOrderTotal: totals.nonPartnerOrderTotal,
+    paymentMethod: isNonPartnerRequest() ? nonPartnerPaymentMethod : "stripe",
     externalPaymentConfirmed: Boolean(document.querySelector("#nonPartnerPaymentConfirmed")?.checked),
     shopping: {
       items: parseShoppingItems(),
@@ -2609,6 +2616,7 @@ function getCurrentCustomer() {
 }
 
 function renderCheckoutCarryover() {
+  syncNonPartnerOrderEntry();
   const customer = getCurrentCustomer();
   const totals = getCartTotals();
   const plan = getActiveMembershipPlan();
@@ -2674,6 +2682,7 @@ function renderCheckoutCarryover() {
     checkoutPaymentSummary.innerHTML = `
       <h3>Payment Summary</h3>
       ${totals.restaurantFoodSubtotal ? `<div class="payment-line"><span>${escapeHtml(selectedRestaurantOrder?.restaurant?.storeName || "Restaurant")} food</span><strong>${money(totals.restaurantFoodSubtotal)}</strong></div><div class="payment-line"><span>Restaurant food tax</span><strong>${money(totals.restaurantFoodTax)}</strong></div>` : ""}
+      ${totals.nonPartnerOrderTotal ? `<div class="payment-line"><span>Non-partner restaurant order</span><strong>${money(totals.nonPartnerOrderTotal)}</strong></div>` : ""}
       <div class="payment-line"><span>Service charge</span><strong>${money(totals.regularServiceCharge)}</strong></div>
       <div class="payment-line"><span>Add-on charges</span><strong>${money(totals.regularAddonCharges)}</strong></div>
       <div class="payment-line"><span>Additional service area charge</span><strong>${money(totals.regularServiceAreaCharge)}</strong></div>
@@ -2701,14 +2710,19 @@ function renderCheckoutCarryover() {
       const links = window.HOPES_GO_NON_PARTNER_PAYMENTS || {};
       nonPartnerPaymentCard.innerHTML = `
         <h3>Non-partner pickup payment</h3>
-        <p>Pay the full order through one option below, then confirm which option you used. Hope's & Go will review the payment before dispatch.</p>
+        <p>Pay the restaurant amount entered on the pickup step, then choose the payment option you used. Hope's & Go will review the payment before dispatch.</p>
+        <div class="payment-line"><span>Restaurant order amount</span><strong>${money(nonPartnerOrderTotal)}</strong></div>
         <div class="external-payment-links">
           ${links.cashApp ? `<a class="secondary-admin-action" href="${escapeHtml(links.cashApp)}" target="_blank" rel="noreferrer">Pay with Cash App</a>` : ""}
           ${links.venmo ? `<a class="secondary-admin-action" href="${escapeHtml(links.venmo)}" target="_blank" rel="noreferrer">Pay with Venmo</a>` : ""}
           ${links.paypal ? `<a class="secondary-admin-action" href="${escapeHtml(links.paypal)}" target="_blank" rel="noreferrer">Pay with PayPal</a>` : ""}
         </div>
-        <label for="nonPartnerPaymentMethod">Payment option used</label>
-        <select id="nonPartnerPaymentMethod"><option value="">Choose one</option><option value="cashapp">Cash App</option><option value="venmo">Venmo</option><option value="paypal">PayPal</option></select>
+        <span class="form-help">Payment option used</span>
+        <div class="external-payment-methods" role="group" aria-label="Payment option used">
+          <button class="secondary-admin-action ${nonPartnerPaymentMethod === "cashapp" ? "active" : ""}" type="button" data-non-partner-payment="cashapp">Cash App</button>
+          <button class="secondary-admin-action ${nonPartnerPaymentMethod === "venmo" ? "active" : ""}" type="button" data-non-partner-payment="venmo">Venmo</button>
+          <button class="secondary-admin-action ${nonPartnerPaymentMethod === "paypal" ? "active" : ""}" type="button" data-non-partner-payment="paypal">PayPal</button>
+        </div>
         <label class="terms-check"><input id="nonPartnerPaymentConfirmed" type="checkbox" /> <span>I completed the external payment and understand the order will be reviewed before dispatch.</span></label>
       `;
     }
@@ -2725,6 +2739,14 @@ function renderCheckoutCarryover() {
 
 function isNonPartnerRequest() {
   return Boolean(customPickupDetailsCollected && !selectedRestaurantOrder);
+}
+
+function syncNonPartnerOrderEntry() {
+  if (!nonPartnerOrderEntry) return;
+  nonPartnerOrderEntry.hidden = Boolean(selectedRestaurantOrder);
+  if (nonPartnerOrderTotalInput && document.activeElement !== nonPartnerOrderTotalInput) {
+    nonPartnerOrderTotalInput.value = nonPartnerOrderTotal ? nonPartnerOrderTotal.toFixed(2) : "";
+  }
 }
 
 function renderCustomerAccountPage() {
@@ -2978,6 +3000,7 @@ function createRequestRecord(payload) {
     riskSummary: payload.testMode || customerTestingMode ? "No live Stripe risk check" : "Waiting for Stripe",
     paymentMethod: payload.paymentMethod || "stripe",
     externalPaymentConfirmed: Boolean(payload.externalPaymentConfirmed),
+    nonPartnerOrderTotal: Number(payload.nonPartnerOrderTotal || 0),
   };
   recordMembershipUsageFromCart();
   requests.unshift(request);
@@ -3326,6 +3349,10 @@ async function startStripeCheckout() {
   }
 
   if (isNonPartnerRequest()) {
+    if (!(payload.nonPartnerOrderTotal > 0)) {
+      checkoutStatus.textContent = "Enter the restaurant order total before continuing.";
+      return;
+    }
     if (!payload.paymentMethod || !payload.externalPaymentConfirmed) {
       checkoutStatus.textContent = "Choose Cash App, Venmo, or PayPal and confirm that the external payment was completed.";
       return;
@@ -3678,6 +3705,7 @@ function isMeaningfulRequestDraft(draft) {
     draft?.items?.length ||
     (draft?.page && draft.page !== "customerServices") ||
     draft?.tip?.value ||
+    draft?.nonPartnerOrderTotal > 0 ||
     draft?.discountCode ||
     draft?.shopping?.list ||
     draft?.additionalStop?.address,
@@ -3717,6 +3745,8 @@ function buildCurrentRequestDraft() {
     deliveryPin: getDeliveryPin(),
     requestToken: getCurrentRequestToken(),
     total: getCartTotals().total,
+    nonPartnerOrderTotal,
+    nonPartnerPaymentMethod,
   };
 }
 
@@ -3777,6 +3807,8 @@ function startFreshRequest() {
   customerInfoEditMode = false;
   tipChoiceMode = "";
   tipStepSeen = false;
+  nonPartnerOrderTotal = 0;
+  nonPartnerPaymentMethod = "";
   shoppingEstimateTotal = 0;
   shoppingEstimateRange = { low: 0, high: 0, unknownCount: 0, explicitCount: 0, catalogCount: 0, unitCount: 0 };
   selectedShoppingProducts = [];
@@ -3846,6 +3878,8 @@ function resumeSavedRequest() {
   else delete tipInput.dataset.amount;
   tipChoiceMode = draft.tip?.choice || "";
   tipStepSeen = Boolean(draft.tip?.seen);
+  nonPartnerOrderTotal = Math.max(0, Number(draft.nonPartnerOrderTotal || 0));
+  nonPartnerPaymentMethod = draft.nonPartnerPaymentMethod || "";
   discountInput.value = draft.discountCode || "";
   serviceAreaNoFeeSelected = Boolean(draft.serviceAreaNoFeeSelected);
   shoppingListInput.value = draft.shopping?.list || "";
@@ -6522,6 +6556,14 @@ function setAdminPage(pageId) {
 }
 
 document.addEventListener("click", (event) => {
+  const nonPartnerPaymentButton = event.target.closest("[data-non-partner-payment]");
+  if (nonPartnerPaymentButton) {
+    nonPartnerPaymentMethod = nonPartnerPaymentButton.dataset.nonPartnerPayment || "";
+    renderCheckoutCarryover();
+    saveCurrentRequestDraft();
+    return;
+  }
+
   const adminPreviewButton = event.target.closest("[data-admin-preview-open]");
   if (adminPreviewButton) {
     openAdminPreview();
@@ -6953,6 +6995,11 @@ function handleCustomerNext() {
     if (!profileFields.pickupAddress.value.trim()) {
       setCustomerStatus("Enter the pickup location for this request.");
       profileFields.pickupAddress.focus();
+      return;
+    }
+    if (!selectedRestaurantOrder && !(nonPartnerOrderTotal > 0)) {
+      setCustomerStatus("Enter the non-partner restaurant order total before continuing.");
+      nonPartnerOrderTotalInput?.focus();
       return;
     }
     setCustomerStatus("");
@@ -7470,6 +7517,16 @@ tipInput.addEventListener("input", () => {
 });
 tipInput.addEventListener("blur", formatTipAmountInput);
 discountInput.addEventListener("input", renderCart);
+document.addEventListener("input", (event) => {
+  if (event.target?.id !== "nonPartnerOrderTotalInput") return;
+  nonPartnerOrderTotal = Math.max(0, parseCurrencyValue(event.target.value));
+  saveCurrentRequestDraft();
+});
+document.addEventListener("change", (event) => {
+  if (event.target?.id !== "nonPartnerOrderTotalInput") return;
+  nonPartnerOrderTotal = Math.max(0, parseCurrencyValue(event.target.value));
+  renderCart();
+});
 checkoutButton.addEventListener("click", startStripeCheckout);
 deliveryMethodInputs.forEach((input) => input.addEventListener("change", renderCart));
 [
