@@ -3659,6 +3659,35 @@ input.field-error {
   cursor: pointer;
 }
 
+.secondary-admin-action.active {
+  color: #fff;
+  background: var(--fresh-dark);
+  border-color: var(--fresh-dark);
+}
+
+.nonpartner-order-entry {
+  display: grid;
+  gap: 6px;
+  margin-top: 14px;
+  padding: 12px;
+  background: #fff5fa;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.nonpartner-order-entry small,
+.form-help {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.external-payment-methods {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 8px 0 12px;
+}
+
 .flow-actions,
 .social-login-actions {
   display: grid;
