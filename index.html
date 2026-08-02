@@ -1120,6 +1120,25 @@
             </article>
           </section>
 
+          <section class="admin-panel admin-force-schedule-panel">
+            <div class="section-heading compact">
+              <div>
+                <p class="eyebrow">Owner scheduling</p>
+                <h2>Schedule a driver</h2>
+              </div>
+              <span>Admin override</span>
+            </div>
+            <p class="payment-note">Use this when you need to schedule a driver outside the hours they submitted. This sets the driver’s recurring weekly coverage and does not change their personal availability form.</p>
+            <form class="admin-force-schedule-form" id="adminForceScheduleForm">
+              <label>Driver name<input id="adminForceScheduleDriver" type="text" placeholder="e.g., Landyn Gavin" required /></label>
+              <label>Day<select id="adminForceScheduleDay"><option>Monday</option><option>Tuesday</option><option>Wednesday</option><option>Thursday</option><option>Friday</option><option>Saturday</option><option>Sunday</option></select></label>
+              <label>Start time<input id="adminForceScheduleStart" type="time" value="15:00" required /></label>
+              <label>End time<input id="adminForceScheduleEnd" type="time" value="23:59" required /></label>
+              <button class="checkout-button" type="submit">Force schedule</button>
+            </form>
+            <p class="checkout-status" id="adminForceScheduleStatus" aria-live="polite"></p>
+          </section>
+
           <section class="admin-panel operations-alert-panel">
             <div class="section-heading compact">
               <div>

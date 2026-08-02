@@ -7679,6 +7679,36 @@ profileForm.addEventListener("submit", (event) => {
   setCustomerStatus("");
   setCustomerPage("customerCheckout");
 });
+document.querySelector("#adminForceScheduleForm")?.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const status = document.querySelector("#adminForceScheduleStatus");
+  const name = document.querySelector("#adminForceScheduleDriver")?.value.trim();
+  const day = document.querySelector("#adminForceScheduleDay")?.value;
+  const start = document.querySelector("#adminForceScheduleStart")?.value;
+  const end = document.querySelector("#adminForceScheduleEnd")?.value;
+  if (!name || !day || !start || !end || start >= end) {
+    if (status) status.textContent = "Enter a driver, day, and a valid start/end time.";
+    return;
+  }
+  if (status) status.textContent = "Saving forced schedule…";
+  try {
+    const existingDays = latestOperationsStatus?.driverSchedules?.[name]?.days || {};
+    const days = { ...existingDays, [day]: [{ start, end }] };
+    const response = await fetch(apiUrl("/operations-schedule"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, days }),
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || "The schedule could not be saved.");
+    latestOperationsStatus = result;
+    renderOperationsStatus(result);
+    if (status) status.textContent = `${name} is now scheduled every ${day}, ${start}–${end}.`;
+  } catch (error) {
+    if (status) status.textContent = error.message;
+  }
+});
+
 availabilityBuilder.addEventListener("click", (event) => {
   const addButton = event.target.closest("[data-add-exact-time]");
   if (addButton) {
