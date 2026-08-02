@@ -593,13 +593,19 @@
           <button class="secondary-admin-action" id="restaurantBackToAdmin" type="button" hidden>Back to Admin</button>
         </header>
         <main class="restaurant-dashboard-shell">
-          <nav class="restaurant-dashboard-menu" aria-label="Restaurant menu">
-            <button class="active" type="button" data-restaurant-page="restaurantEditorPage">Store &amp; Menu</button>
-            <button type="button" data-restaurant-page="restaurantCurrentOrdersPage">Current Orders</button>
-            <button type="button" data-restaurant-page="restaurantPastOrdersPage">Past Orders</button>
-            <button type="button" data-restaurant-page="restaurantPayRecordsPage">Pay Records</button>
-          </nav>
-          <section class="restaurant-dashboard-page" id="restaurantCurrentOrdersPage">
+          <div class="restaurant-dashboard-menu" aria-label="Restaurant menu">
+            <label class="restaurant-dashboard-select-label" for="restaurantDashboardMenu">Manage</label>
+            <select id="restaurantDashboardMenu" aria-label="Restaurant dashboard section">
+              <option value="restaurantCurrentOrdersPage">Waiting for orders</option>
+              <option value="restaurantEditorPage#restaurantStoreInfoSection">Store info</option>
+              <option value="restaurantEditorPage#restaurantMenuSection">Saved meals &amp; menu</option>
+              <option value="restaurantEditorPage#restaurantHoursSection">Hours</option>
+              <option value="restaurantEditorPage#restaurantDealsSection">Weekly specials</option>
+              <option value="restaurantPastOrdersPage">Past Orders</option>
+              <option value="restaurantPayRecordsPage">Pay Records</option>
+            </select>
+          </div>
+          <section class="restaurant-dashboard-page active" id="restaurantCurrentOrdersPage">
             <div class="section-heading compact"><div><h2>Current Orders</h2><span>Press Start Order when you begin, then Finish Order when it is ready.</span></div><button class="secondary-admin-action" id="refreshRestaurantOrders" type="button">Refresh</button></div>
             <div id="restaurantCurrentOrdersBoard" class="restaurant-order-board"></div>
           </section>
@@ -611,7 +617,7 @@
             <div class="section-heading compact"><h2>Pay Records</h2><span>Food and food-tax amounts associated with orders</span></div>
             <div id="restaurantPayRecordsBoard" class="restaurant-order-board"></div>
           </section>
-          <div class="restaurant-dashboard-page active" id="restaurantEditorPage">
+          <div class="restaurant-dashboard-page" id="restaurantEditorPage">
           <section class="restaurant-setup-card" id="restaurantAdminChooser" hidden>
             <div class="section-heading compact"><h2>Choose a restaurant site</h2><span>Owner and admin access</span></div>
             <div class="restaurant-store-grid" id="restaurantAdminStoreGrid"></div>
@@ -622,7 +628,7 @@
             <p>Everything is on one simple page. Add menu items, change prices, upload food pictures, update weekly deals, then press Save &amp; Publish.</p>
           </section>
           <form id="restaurantEditorForm">
-            <section class="restaurant-setup-card">
+            <section class="restaurant-setup-card" id="restaurantStoreInfoSection">
               <div class="section-heading compact"><h2>Store information</h2><span>Shown to customers</span></div>
               <div class="restaurant-form-grid">
                 <label>Store name<input id="restaurantStoreName" type="text" required /></label>
@@ -633,18 +639,18 @@
                 <label>Cover picture<input id="restaurantCoverInput" type="file" accept="image/png,image/jpeg,image/webp" /></label>
               </div>
             </section>
-            <section class="restaurant-setup-card">
+            <section class="restaurant-setup-card" id="restaurantHoursSection">
               <div class="section-heading compact"><h2>Hours</h2><span>Type “Closed” when needed</span></div>
               <div class="restaurant-hours-grid" id="restaurantHoursEditor"></div>
             </section>
-            <section class="restaurant-setup-card">
+            <section class="restaurant-setup-card" id="restaurantMenuSection">
               <div class="section-heading compact">
                 <div><h2>Menu</h2><span>Add, remove, or temporarily hide items</span></div>
                 <button class="secondary-admin-action" id="addRestaurantMenuItem" type="button">+ Add menu item</button>
               </div>
               <div class="restaurant-editor-list" id="restaurantMenuEditor"></div>
             </section>
-            <section class="restaurant-setup-card">
+            <section class="restaurant-setup-card" id="restaurantDealsSection">
               <div class="section-heading compact">
                 <div><h2>Weekly deals</h2><span>Change these as often as needed</span></div>
                 <button class="secondary-admin-action" id="addRestaurantDeal" type="button">+ Add weekly deal</button>

@@ -1470,6 +1470,9 @@ app.post("/api/restaurant/orders/:id/status", requireRestaurant, (req, res) => {
   const nextStatus = String(req.body.status || "");
   if (!["new", "preparing", "ready", "completed", "cancelled"].includes(nextStatus)) return res.status(400).json({ error: "Choose a valid order status." });
   order.status = nextStatus;
+  if (req.body.pickupTime !== undefined) order.pickupTime = String(req.body.pickupTime || "").trim().slice(0, 80);
+  if (req.body.declineReason !== undefined) order.declineReason = String(req.body.declineReason || "").trim().slice(0, 300);
+  if (req.body.restaurantNote !== undefined) order.restaurantNote = String(req.body.restaurantNote || "").trim().slice(0, 300);
   order.updatedAt = new Date().toISOString();
   saveRestaurantOrders();
   res.json({ order: publicRestaurantOrder(order) });

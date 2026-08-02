@@ -676,6 +676,14 @@ function renderRestaurantOrderCard(order, isPast = false) {
   return `<article class="restaurant-order-card"><div class="restaurant-order-top"><strong>${escapeHtml(order.orderNumber || "Order")}</strong><span class="pill">${order.status === "new" ? "New order" : "In progress"}</span></div><p>${escapeHtml(order.customerName || "Customer")} · ${escapeHtml(order.deliveryAddress || "Delivery address not provided")}</p><div class="restaurant-order-lines">${(order.items || []).map((item) => `<div class="restaurant-order-line"><span>${Number(item.quantity || 0)} × ${escapeHtml(item.name)}</span><strong>${money(Number(item.lineTotal || 0))}</strong></div>`).join("")}</div><div class="restaurant-order-line"><span>Food + food tax</span><strong>${money(Number(order.restaurantAmount || 0))}</strong></div>${isPast ? `<small>${new Date(order.createdAt).toLocaleString()}</small>` : `<div class="restaurant-order-actions">${orderAction}</div>`}</article>`;
 }
 
+// Compact order cards keep the restaurant home screen focused on incoming orders.
+function renderRestaurantOrderCard(order, isPast = false) {
+  const actions = order.status === "new"
+    ? `<button class="checkout-button" type="button" data-order-action="accept" data-order-id="${escapeHtml(order.id)}">Accept &amp; set pickup time</button><button class="secondary-admin-action" type="button" data-order-action="edit" data-order-id="${escapeHtml(order.id)}">Edit order</button><a class="secondary-admin-action" href="tel:${escapeHtml(order.customerPhone || "")}" ${order.customerPhone ? "" : "hidden"}>Contact customer</a><button class="secondary-admin-action" type="button" data-order-action="decline" data-order-id="${escapeHtml(order.id)}">Decline</button>`
+    : `<button class="checkout-button" type="button" data-order-action="finish" data-order-id="${escapeHtml(order.id)}">Finish Order</button>`;
+  return `<article class="restaurant-order-card"><div class="restaurant-order-top"><strong>${escapeHtml(order.orderNumber || "Order")}</strong><span class="pill">${order.status === "new" ? "New order" : "In progress"}</span></div><p>${escapeHtml(order.customerName || "Customer")} · ${escapeHtml(order.deliveryAddress || "Delivery address not provided")}</p><div class="restaurant-order-lines">${(order.items || []).map((item) => `<div class="restaurant-order-line"><span>${Number(item.quantity || 0)} x ${escapeHtml(item.name)}</span><strong>${money(Number(item.lineTotal || 0))}</strong></div>`).join("")}</div><div class="restaurant-order-line"><span>Food + food tax</span><strong>${money(Number(order.restaurantAmount || 0))}</strong></div>${order.pickupTime ? `<small>Pickup time: ${escapeHtml(order.pickupTime)}</small>` : ""}${isPast ? `<small>${new Date(order.createdAt).toLocaleString()}</small>` : `<div class="restaurant-order-actions">${actions}</div>`}</article>`;
+}
+
 async function loadRestaurantOrders() {
   if (!restaurantAuthToken || !restaurantCurrentOrdersBoard) return;
   try {
@@ -7346,18 +7354,38 @@ document.querySelector("#restaurantLogout")?.addEventListener("click", async () 
   try { await fetch(apiUrl("/api/restaurant/logout"), { method: "POST", headers: restaurantAuthHeaders() }); } catch {}
   logoutToLogin();
 });
-document.querySelectorAll("[data-restaurant-page]").forEach((button) => {
-  button.addEventListener("click", () => {
-    document.querySelectorAll("[data-restaurant-page]").forEach((item) => item.classList.toggle("active", item === button));
-    document.querySelectorAll(".restaurant-dashboard-page").forEach((page) => page.classList.toggle("active", page.id === button.dataset.restaurantPage));
-    if (button.dataset.restaurantPage !== "restaurantEditorPage") loadRestaurantOrders();
-  });
-});
+function selectRestaurantDashboardPage(value, scrollToSection = true) {
+  const [pageId, sectionId] = String(value || "restaurantCurrentOrdersPage").split("#");
+  document.querySelectorAll(".restaurant-dashboard-page").forEach((page) => page.classList.toggle("active", page.id === pageId));
+  if (pageId !== "restaurantEditorPage") loadRestaurantOrders();
+  if (sectionId && scrollToSection) document.getElementById(sectionId)?.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+document.querySelector("#restaurantDashboardMenu")?.addEventListener("change", (event) => selectRestaurantDashboardPage(event.target.value));
 document.querySelector("#refreshRestaurantOrders")?.addEventListener("click", loadRestaurantOrders);
 document.querySelector("#restaurantCurrentOrdersBoard")?.addEventListener("click", async (event) => {
-  const button = event.target.closest("[data-order-status]");
+  const button = event.target.closest("[data-order-action]");
   if (!button) return;
-  const response = await fetch(apiUrl(`/api/restaurant/orders/${encodeURIComponent(button.dataset.orderId)}/status`), { method: "POST", headers: restaurantAuthHeaders(), body: JSON.stringify({ status: button.dataset.orderStatus }) });
+  const action = button.dataset.orderAction;
+  let status = action === "accept" ? "preparing" : action === "finish" ? "completed" : action === "decline" ? "cancelled" : "";
+  if (action === "edit") {
+    const note = window.prompt("Add a note for this order or customer:", "");
+    if (note === null) return;
+    const editResponse = await fetch(apiUrl(`/api/restaurant/orders/${encodeURIComponent(button.dataset.orderId)}/status`), { method: "POST", headers: restaurantAuthHeaders(), body: JSON.stringify({ status: "new", restaurantNote: note }) });
+    if (editResponse.ok) loadRestaurantOrders();
+    return;
+  }
+  const payload = { status };
+  if (action === "accept") {
+    const pickupTime = window.prompt("What pickup time should we give the customer?", "");
+    if (pickupTime === null || !pickupTime.trim()) return;
+    payload.pickupTime = pickupTime.trim();
+  }
+  if (action === "decline") {
+    const declineReason = window.prompt("Why is this order being declined?", "");
+    if (declineReason === null || !declineReason.trim()) return;
+    payload.declineReason = declineReason.trim();
+  }
+  const response = await fetch(apiUrl(`/api/restaurant/orders/${encodeURIComponent(button.dataset.orderId)}/status`), { method: "POST", headers: restaurantAuthHeaders(), body: JSON.stringify(payload) });
   if (response.ok) loadRestaurantOrders();
 });
 document.querySelector("#restaurantBackToAdmin")?.addEventListener("click", () => setActiveView("admin"));

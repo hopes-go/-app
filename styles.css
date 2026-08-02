@@ -4815,14 +4815,16 @@ main,
 .restaurant-deal-public { padding: 13px 16px; border-radius: 14px; background: #fff0f7; border: 1px solid #f4c4da; }
 .restaurant-menu-card { overflow: hidden; }
 .restaurant-menu-card-footer { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 12px; }
-.restaurant-food-cart { position: sticky; bottom: 12px; margin-top: 22px; padding: 18px; border-radius: 18px; color: #fff; background: #292038; box-shadow: 0 16px 40px rgba(0,0,0,.25); }
+.restaurant-food-cart { position: static; max-width: 720px; margin: 18px auto 4px; padding: 12px 14px; border: 1px solid #eadfea; border-radius: 12px; color: #4a2440; background: #fff; box-shadow: 0 5px 16px rgba(74,36,64,.08); }
+.restaurant-food-cart-heading { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.restaurant-food-cart-heading span { color: #766579; font-size: .9rem; }
 .restaurant-food-cart-lines { display: grid; gap: 7px; margin: 10px 0; }
 .restaurant-food-cart-line { display: flex; justify-content: space-between; gap: 12px; }
 .restaurant-workspace-header { background: linear-gradient(120deg, #fff1f7, #f1eaff); }
 .restaurant-dashboard-shell { max-width: 1050px; margin: 0 auto; padding: 24px; }
-.restaurant-dashboard-menu { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; padding: 8px; border-radius: 16px; background: #292038; }
-.restaurant-dashboard-menu button { flex: 1 1 150px; padding: 12px 14px; border: 0; border-radius: 10px; color: #fff; background: transparent; font-weight: 700; cursor: pointer; }
-.restaurant-dashboard-menu button.active { color: #4a2440; background: #fff; }
+.restaurant-dashboard-menu { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; padding: 10px 12px; border-radius: 14px; background: #292038; }
+.restaurant-dashboard-select-label { color: #fff; font-weight: 700; }
+.restaurant-dashboard-menu select { min-width: 240px; padding: 10px 12px; border: 0; border-radius: 9px; color: #4a2440; background: #fff; font: inherit; font-weight: 700; }
 .restaurant-dashboard-page { display: none; }
 .restaurant-dashboard-page.active { display: block; }
 .restaurant-order-board { display: grid; gap: 14px; }
