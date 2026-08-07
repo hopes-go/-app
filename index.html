@@ -174,7 +174,7 @@
             </p>
             <div class="hero-actions">
               <button class="primary-action" id="startRequestButton" type="button">Start a request</button>
-              <button class="primary-action restaurant-marketplace-open" id="openRestaurantsButton" type="button">Restaurant</button>
+              <button class="primary-action restaurant-marketplace-open" id="openRestaurantsButton" type="button" hidden>Restaurant</button>
               <button class="secondary-action" id="openMembershipsButton" type="button">Memberships</button>
             </div>
             <p class="customer-service-status" id="customerServiceAvailability" aria-live="polite">Checking driver availability...</p>
@@ -424,9 +424,9 @@
                 <label for="pickupInstructions">Pickup instructions</label>
                 <textarea id="pickupInstructions" placeholder="Order name, order number, counter pickup, parking notes"></textarea>
                 <div class="nonpartner-order-entry" id="nonPartnerOrderEntry">
-                  <label for="nonPartnerOrderTotalInput">Non-partner restaurant order total</label>
+                  <label for="nonPartnerOrderTotalInput">Merchant order total (if Hope's &amp; Go must pay)</label>
                   <input id="nonPartnerOrderTotalInput" type="number" min="0.01" step="0.01" inputmode="decimal" placeholder="Enter the restaurant total" />
-                  <small>If this pickup is from a restaurant that is not a Hope's &amp; Go partner, enter the full restaurant order amount here. It will carry over to checkout.</small>
+                  <small>Optional. Enter the merchandise or food total only when Hope's &amp; Go must pay the store or restaurant. Leave blank for prepaid pickups, packages, or other locations.</small>
                 </div>
               </section>
 
