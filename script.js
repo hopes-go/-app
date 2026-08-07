@@ -1587,28 +1587,74 @@ function syncRequestLocationFromField(field) {
   setSelectedRequestLocation(field, address, getKnownLocationCoordinates(address), false, address ? "local" : "");
 }
 
+function createMapboxSearchSessionToken() {
+  if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
+  return `hopes-go-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+let mapboxSearchSessionToken = createMapboxSearchSessionToken();
+
+function formatMapboxLocation(name = "", address = "") {
+  const cleanName = String(name || "").trim();
+  const cleanAddress = String(address || "").trim();
+  if (!cleanName) return cleanAddress;
+  if (!cleanAddress || cleanAddress.toLowerCase().startsWith(cleanName.toLowerCase())) return cleanAddress || cleanName;
+  return `${cleanName}, ${cleanAddress}`;
+}
+
+async function retrieveMapboxLocation(mapboxId) {
+  const mapboxToken = window.HOPES_GO_MAPBOX_TOKEN || "";
+  if (!mapboxToken || !mapboxId) return null;
+  const url = new URL(`https://api.mapbox.com/search/searchbox/v1/retrieve/${encodeURIComponent(mapboxId)}`);
+  url.searchParams.set("session_token", mapboxSearchSessionToken);
+  url.searchParams.set("access_token", mapboxToken);
+  const response = await fetch(url);
+  if (!response.ok) return null;
+  const data = await response.json();
+  const feature = data.features?.[0];
+  if (!feature?.geometry?.coordinates) return null;
+  const properties = feature.properties || {};
+  const address = properties.full_address || properties.place_formatted || properties.address || "";
+  const value = formatMapboxLocation(properties.name, address);
+  mapboxSearchSessionToken = createMapboxSearchSessionToken();
+  return {
+    label: value,
+    value,
+    coordinates: feature.geometry.coordinates,
+    source: "mapbox",
+  };
+}
+
 async function searchLocations(query, limit = 5) {
   const mapboxToken = window.HOPES_GO_MAPBOX_TOKEN || "";
   if (mapboxToken && query.trim().length >= 3) {
     try {
-      const url = new URL(`https://api.mapbox.com/search/geocode/v6/forward`);
-      url.searchParams.set("q", `${query}, Burlington, Iowa`);
+      const url = new URL(`https://api.mapbox.com/search/searchbox/v1/suggest`);
+      url.searchParams.set("q", query.trim());
       url.searchParams.set("proximity", "-91.1129,40.8075");
       url.searchParams.set("country", "US");
+      url.searchParams.set("language", "en");
       url.searchParams.set("limit", String(limit));
+      url.searchParams.set("session_token", mapboxSearchSessionToken);
       url.searchParams.set("access_token", mapboxToken);
       const response = await fetch(url);
-      if (response.ok) {
-        const data = await response.json();
-        const matches = (data.features || []).map((feature) => ({
-          label: feature.properties?.full_address || feature.properties?.name || feature.place_name,
-          value: feature.properties?.full_address || feature.properties?.name || feature.place_name,
-          coordinates: feature.geometry?.coordinates,
-          source: "mapbox",
-        }));
-        if (matches.length) return matches;
-      }
-    } catch {
+      if (!response.ok) throw new Error(`Mapbox search returned ${response.status}.`);
+      const data = await response.json();
+      const matches = (data.suggestions || [])
+        .filter((suggestion) => suggestion.mapbox_id)
+        .map((suggestion) => {
+          const address = suggestion.full_address || suggestion.place_formatted || suggestion.address || "";
+          const value = formatMapboxLocation(suggestion.name, address);
+          return {
+            label: value,
+            value,
+            mapboxId: suggestion.mapbox_id,
+            source: "mapbox",
+          };
+        });
+      if (matches.length) return matches;
+    } catch (error) {
+      console.warn("Mapbox business search unavailable; using saved local suggestions.", error);
       // Fall back to local suggestions if Mapbox is unavailable.
     }
   }
@@ -1629,10 +1675,11 @@ function renderLocationSuggestions(container, matches, field) {
           data-location-value="${value.replace(/"/g, "&quot;")}"
           data-location-lng="${match.coordinates?.[0] ?? ""}"
           data-location-lat="${match.coordinates?.[1] ?? ""}"
+          data-location-mapbox-id="${escapeHtml(match.mapboxId || "")}"
           data-location-source="${match.source || ""}"
         >
           <strong>${escapeHtml(match.label || value)}</strong>
-          <span>Use this location</span>
+          <span>Select and confirm this location</span>
         </button>
       `;
       }
@@ -1640,22 +1687,35 @@ function renderLocationSuggestions(container, matches, field) {
     .join("");
   container.classList.toggle("active", Boolean(matches.length));
   container.querySelectorAll("[data-location-value]").forEach((button) => {
-    button.addEventListener("click", () => {
-      field.value = button.dataset.locationValue;
-      container.classList.remove("active");
-      updateLocationDatalist(field.value);
-      renderCart();
-      const coordinates =
-        button.dataset.locationLng && button.dataset.locationLat
-          ? [Number(button.dataset.locationLng), Number(button.dataset.locationLat)]
+    button.addEventListener("click", async () => {
+      button.disabled = true;
+      const originalLabel = button.querySelector("span")?.textContent || "Select and confirm this location";
+      if (button.querySelector("span")) button.querySelector("span").textContent = "Confirming with Mapbox...";
+      try {
+        const retrieved = button.dataset.locationMapboxId
+          ? await retrieveMapboxLocation(button.dataset.locationMapboxId)
           : null;
-      setSelectedRequestLocation(
-        field,
-        field.value,
-        coordinates,
-        button.dataset.locationSource === "mapbox" && Boolean(coordinates),
-        button.dataset.locationSource
-      );
+        field.value = retrieved?.value || button.dataset.locationValue;
+        container.classList.remove("active");
+        updateLocationDatalist(field.value);
+        const coordinates = retrieved?.coordinates || (
+          button.dataset.locationLng && button.dataset.locationLat
+            ? [Number(button.dataset.locationLng), Number(button.dataset.locationLat)]
+            : null
+        );
+        setSelectedRequestLocation(
+          field,
+          field.value,
+          coordinates,
+          (retrieved?.source || button.dataset.locationSource) === "mapbox" && Boolean(coordinates),
+          retrieved?.source || button.dataset.locationSource
+        );
+        renderCart();
+        field.focus();
+      } finally {
+        button.disabled = false;
+        if (button.querySelector("span")) button.querySelector("span").textContent = originalLabel;
+      }
     });
   });
 }
@@ -1681,16 +1741,6 @@ function wireAddressAutocomplete(field, container) {
   field.addEventListener("focus", update);
   field.addEventListener("blur", () => {
     setTimeout(() => container?.classList.remove("active"), 180);
-    setTimeout(async () => {
-      const address = field.value.trim();
-      if (!address || !window.HOPES_GO_MAPBOX_TOKEN) return;
-      const context = getLocationContext(field);
-      if (selectedRequestLocations[context.key]?.verified && selectedRequestLocations[context.key].address === address) return;
-      const [match] = await searchLocations(address, 1);
-      if (match?.coordinates) {
-        setSelectedRequestLocation(field, match.value || address, match.coordinates, match.source === "mapbox", match.source);
-      }
-    }, 220);
   });
 }
 

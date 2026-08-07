@@ -1,4 +1,4 @@
-const CACHE_NAME = "hopes-go-v23-coming-soon";
+const CACHE_NAME = "hopes-go-v24-simple-rebuild";
 const APP_FILES = [
   "./",
   "./index.html",
@@ -40,6 +40,22 @@ self.addEventListener("fetch", (event) => {
       caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
       return response;
     }).catch(() => caches.match(event.request).then((cached) => cached || caches.match("./index.html"))));
+    return;
+  }
+  const requestUrl = new URL(event.request.url);
+  const isFreshCoreFile =
+    requestUrl.origin === self.location.origin &&
+    ["script", "style"].includes(event.request.destination);
+  if (isFreshCoreFile) {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          const copy = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
+          return response;
+        })
+        .catch(() => caches.match(event.request))
+    );
     return;
   }
   event.respondWith(caches.match(event.request).then((cached) => cached || fetch(event.request)));

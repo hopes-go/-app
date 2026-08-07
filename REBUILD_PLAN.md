@@ -31,10 +31,14 @@ This branch rebuilds the active ordering experience while the complete pre-rebui
 3. Mapbox suggests nearby businesses and addresses; the customer confirms the exact pins before submission.
 4. The request is offered to active drivers and an assigned driver accepts it.
 5. Customer and driver communicate in the order conversation.
-6. Driver sends food-payment and tip instructions; customer pays the driver directly and the driver confirms receipt.
-7. The app calculates only the Hope's & Go service fee, add-ons, discounts, and service-area charge.
-8. Customer pays the Hope's & Go amount through Stripe.
-9. A verified Stripe webhook unlocks Start order and notifies the assigned driver.
-10. Driver progress, GPS, Mapbox route, ETA, receipt, delivery proof, and completion update the customer account.
+6. A friendly request check-in page explains that Hope's & Go is reviewing the request and confirming driver availability, then advances when a driver accepts.
+7. The assigned driver sends approved payment options and instructions in the order conversation.
+8. The customer reviews a dedicated optional Tip page and pays the tip directly to the assigned driver.
+9. The next Pickup Payment page shows the food/order amount, the driver's approved payment option, and pending or confirmed status.
+10. The driver confirms that the tip and food/order funds were received.
+11. The app calculates only the Hope's & Go service fee, add-ons, discounts, and service-area charge.
+12. Customer pays the Hope's & Go amount through Stripe.
+13. A verified Stripe webhook unlocks Start order and notifies the assigned driver.
+14. Driver progress, GPS, Mapbox route, ETA, receipt, delivery proof, and completion update the customer account.
 
 No rebuild branch is merged or deployed until the complete local workflow has been reviewed and approved.
