@@ -12,7 +12,22 @@
     <link rel="apple-touch-icon" href="assets/logo.png" />
     <link rel="stylesheet" href="styles.css" />
   </head>
-  <body>
+  <body class="maintenance-mode">
+    <!-- TEMPORARY COMING-SOON PAGE: remove this section and the maintenance-mode class from <body> when ready. -->
+    <section class="coming-soon-page" aria-labelledby="comingSoonTitle">
+      <div class="coming-soon-card">
+        <img class="coming-soon-logo" src="assets/logo.png" alt="Hope's & Go" />
+        <p class="coming-soon-eyebrow">When life gets busy, we go.</p>
+        <h1 id="comingSoonTitle">Our new site is on the way!</h1>
+        <p class="coming-soon-message">We appreciate your patience while we finish getting everything ready. In the meantime, please call or text us directly to place your order.</p>
+        <a class="coming-soon-phone" href="tel:+16122556290" aria-label="Call Hope's and Go at 612-255-6290">(612) 255-6290</a>
+        <div class="coming-soon-actions">
+          <a class="coming-soon-action coming-soon-call" href="tel:+16122556290">Call to order</a>
+          <a class="coming-soon-action coming-soon-text" href="sms:+16122556290">Text to order</a>
+        </div>
+        <p class="coming-soon-signoff">We’ll be up and running soon. Thank you for supporting Hope's &amp; Go!</p>
+      </div>
+    </section>
     <main>
       <div class="owner-site-switcher" id="ownerSiteSwitcher" aria-hidden="true">
         <button class="owner-menu-button admin-preview-open" id="adminPreviewOpen" type="button" data-admin-preview-open>Preview</button>
