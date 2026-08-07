@@ -119,6 +119,9 @@ const serviceCompletionProfiles = {
 };
 
 const customerTestingMode = false;
+// Keep the restaurant marketplace code ready for a later partner launch while
+// routing today's customers through the universal Mapbox pickup search.
+const RESTAURANT_MARKETPLACE_ENABLED = false;
 const adminPreviewFrameMode = new URLSearchParams(window.location.search).has("admin-preview");
 if (adminPreviewFrameMode) document.body.classList.add("admin-preview-frame");
 const TEST_REQUEST_TTL_MS = 20 * 60 * 1000;
@@ -660,6 +663,7 @@ const restaurantPastOrdersBoard = document.querySelector("#restaurantPastOrdersB
 const restaurantPayRecordsBoard = document.querySelector("#restaurantPayRecordsBoard");
 const restaurantStripeStatus = document.querySelector("#restaurantStripeStatus");
 const restaurantMarketplace = document.querySelector("#restaurantMarketplace");
+const openRestaurantsButton = document.querySelector("#openRestaurantsButton");
 const restaurantStoreGrid = document.querySelector("#restaurantStoreGrid");
 const restaurantPublicMenu = document.querySelector("#restaurantPublicMenu");
 const restaurantDays = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
@@ -1324,6 +1328,7 @@ async function notifyOwnerOfTestOrder(request) {
 }
 
 function setCustomerMode(mode) {
+  if (mode === "restaurants" && !RESTAURANT_MARKETPLACE_ENABLED) mode = "request";
   currentCustomerMode = mode;
   document.body.dataset.customerMode = mode;
   if (membershipPage) {
@@ -1331,6 +1336,7 @@ function setCustomerMode(mode) {
   }
   if (restaurantMarketplace) {
     restaurantMarketplace.setAttribute("aria-hidden", String(mode !== "restaurants"));
+    restaurantMarketplace.hidden = !RESTAURANT_MARKETPLACE_ENABLED || mode !== "restaurants";
   }
   renderCustomerAccountPage();
   renderCustomerOrdersPage();
@@ -3763,6 +3769,7 @@ function buildCurrentRequestDraft() {
     total: getCartTotals().total,
     nonPartnerOrderTotal,
     nonPartnerPaymentMethod,
+    customPickupDetailsCollected,
   };
 }
 
@@ -3896,6 +3903,7 @@ function resumeSavedRequest() {
   tipStepSeen = Boolean(draft.tip?.seen);
   nonPartnerOrderTotal = Math.max(0, Number(draft.nonPartnerOrderTotal || 0));
   nonPartnerPaymentMethod = draft.nonPartnerPaymentMethod || "";
+  customPickupDetailsCollected = Boolean(draft.customPickupDetailsCollected || draft.customer?.pickupAddress);
   discountInput.value = draft.discountCode || "";
   serviceAreaNoFeeSelected = Boolean(draft.serviceAreaNoFeeSelected);
   shoppingListInput.value = draft.shopping?.list || "";
@@ -7019,11 +7027,6 @@ function handleCustomerNext() {
       profileFields.pickupAddress.focus();
       return;
     }
-    if (!selectedRestaurantOrder && !(nonPartnerOrderTotal > 0)) {
-      setCustomerStatus("Enter the non-partner restaurant order total before continuing.");
-      nonPartnerOrderTotalInput?.focus();
-      return;
-    }
     setCustomerStatus("");
     if (!selectedRestaurantOrder && !customPickupDetailsCollected) {
       customPickupDetailsCollected = true;
@@ -7123,7 +7126,16 @@ startRequestButton?.addEventListener("click", async () => {
   const available = await ensureDriverAvailable();
   startRequestButton.disabled = false;
   startRequestButton.textContent = "Start a request";
-  if (available) setCustomerMode("restaurants");
+  if (available) {
+    startFreshRequest();
+    const pickupService = services.find((service) => service.id === 1);
+    cart.set(pickupService.id, { service: pickupService, quantity: 1 });
+    customPickupDetailsCollected = false;
+    setCustomerMode("request");
+    setCustomerPage("pickupInfo");
+    renderCart();
+    profileFields.pickupAddress.focus();
+  }
 });
 
 resumeCartButton?.addEventListener("click", async () => {
@@ -7421,7 +7433,12 @@ document.querySelector("#adminRestaurantSitesButton")?.addEventListener("click",
   }
   button.textContent = "Restaurant sites";
 });
-document.querySelector("#openRestaurantsButton")?.addEventListener("click", () => setCustomerMode("restaurants"));
+if (openRestaurantsButton) {
+  openRestaurantsButton.hidden = !RESTAURANT_MARKETPLACE_ENABLED;
+  openRestaurantsButton.addEventListener("click", () => {
+    if (RESTAURANT_MARKETPLACE_ENABLED) setCustomerMode("restaurants");
+  });
+}
 document.querySelector("#closeRestaurantsButton")?.addEventListener("click", () => setCustomerMode("home"));
 document.querySelector("#differentPickupLocationButton")?.addEventListener("click", () => {
   startFreshRequest();
