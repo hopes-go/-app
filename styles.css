@@ -309,6 +309,10 @@ summary:focus-visible {
   display: none;
 }
 
+[hidden] {
+  display: none !important;
+}
+
 .pay-summary {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
