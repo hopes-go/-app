@@ -6,8 +6,8 @@
   <meta name="theme-color" content="#d92f7d" />
   <meta name="robots" content="noindex,nofollow,noarchive" />
   <meta http-equiv="Cache-Control" content="no-store" />
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'; connect-src 'none'; form-action 'none'; frame-ancestors 'none'; base-uri 'none'" />
-  <title>Hope's & Go Partner Orders Demo</title>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'; connect-src 'self'; form-action 'self'; frame-ancestors 'none'; base-uri 'none'" />
+  <title>Hope's & Go Partner Orders</title>
   <link rel="stylesheet" href="restaurant-demo.css" />
 </head>
 <body>
@@ -18,10 +18,10 @@
       <h1>Restaurant Login</h1>
       <p>Use the tablet username and PIN provided by Hope's &amp; Go.</p>
       <label>Restaurant username<input id="terminalUsername" type="text" autocomplete="off" autocapitalize="none" required /></label>
-      <label>Tablet PIN<input id="terminalPin" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="8" autocomplete="off" required /></label>
+      <label>Tablet PIN<input id="terminalPin" type="password" inputmode="numeric" pattern="[0-9]{6}" minlength="6" maxlength="6" autocomplete="off" required /></label>
       <button class="primary" type="submit">Open my orders</button>
       <p class="login-status" id="terminalLoginStatus" role="alert"></p>
-      <small>Safe demonstration only — no real orders or payments.</small>
+      <small>Restricted restaurant access — orders only.</small>
     </form>
   </section>
 
@@ -31,7 +31,7 @@
       <img src="assets/logo.png" alt="Hope's & Go" />
       <div><span id="restaurantName">Partner Restaurant</span><strong>Incoming Orders</strong></div>
     </div>
-    <div class="demo-pill">SAFE DEMO</div>
+    <div class="demo-pill">RESTAURANT ONLY</div>
   </header>
 
   <main>
@@ -43,7 +43,7 @@
 
     <section class="toolbar">
       <div><p>Hope's &amp; Go partner tablet</p><h1>Orders</h1></div>
-      <div class="toolbar-actions"><button id="resetDemo" type="button">Reset demo</button><button id="terminalLogout" type="button">Log out</button></div>
+      <div class="toolbar-actions"><button id="refreshOrders" type="button">Refresh</button><button id="terminalLogout" type="button">Log out</button></div>
     </section>
 
     <div id="orderList" class="order-list" aria-live="polite"></div>

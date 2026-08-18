@@ -789,6 +789,8 @@ function toCents(amount) {
 const restaurantStatePath = path.join(__dirname, ".data", "restaurant-state.json");
 const restaurantOrdersPath = path.join(__dirname, ".data", "restaurant-orders.json");
 const restaurantSessions = new Map();
+const restaurantTabletSessions = new Map();
+const restaurantTabletLoginAttempts = new Map();
 const adminRestaurantSessions = new Map();
 const driverSessions = new Map();
 
@@ -798,7 +800,7 @@ function hashRestaurantPassword(password, salt = crypto.randomBytes(16).toString
 }
 
 function safeRestaurant(record) {
-  const { passwordHash, passwordSalt, ...publicRecord } = record || {};
+  const { passwordHash, passwordSalt, tabletPinHash, tabletPinSalt, tabletUsername, ...publicRecord } = record || {};
   return publicRecord;
 }
 
@@ -893,6 +895,49 @@ function saveRestaurantStateFile(state) {
 }
 
 let restaurantState = loadRestaurantState();
+
+function ensureNapoliTabletAccount() {
+  const id = "napoli-pizza";
+  const tabletUsername = "napolipizza#115";
+  const tabletPinSalt = "08998d3e415a2341dc6f39df1f5a18f0";
+  const tabletPinHash = "e311fb325d365664e4a8cf0ceac91154fd3f56872d24cdfe59f13e26f4c864dc18786487c8577654a6c939fe0a99298c157678544231bbad3124d1d0cc178cc7";
+  let restaurant = restaurantState.restaurants.find((item) => item.id === id);
+  if (!restaurant) {
+    const editorPassword = hashRestaurantPassword(crypto.randomBytes(32).toString("hex"));
+    restaurant = {
+      id,
+      username: `disabled-${id}`,
+      passwordSalt: editorPassword.salt,
+      passwordHash: editorPassword.hash,
+      tabletUsername,
+      tabletPinSalt,
+      tabletPinHash,
+      storeName: "Napoli Pizza",
+      description: "Restaurant partner tablet account. Customer ordering will remain hidden until setup is complete.",
+      address: "",
+      phone: "",
+      logo: "",
+      coverImage: "",
+      stripeAccountId: "",
+      stripeReady: false,
+      active: false,
+      foodTaxRate: 0.07,
+      hours: Object.fromEntries(availabilityDays.map((day) => [day, "Closed"])),
+      weeklyDeals: [],
+      menu: [],
+      updatedAt: new Date().toISOString(),
+    };
+    restaurantState.restaurants.push(restaurant);
+  } else {
+    restaurant.tabletUsername = tabletUsername;
+    restaurant.tabletPinSalt = tabletPinSalt;
+    restaurant.tabletPinHash = tabletPinHash;
+  }
+  saveRestaurantStateFile(restaurantState);
+}
+
+ensureNapoliTabletAccount();
+
 function loadRestaurantOrders() {
   try {
     const saved = JSON.parse(fs.readFileSync(restaurantOrdersPath, "utf8"));
@@ -913,6 +958,26 @@ function issueRestaurantSession(restaurantId) {
   const token = crypto.randomBytes(32).toString("hex");
   restaurantSessions.set(token, { restaurantId, expiresAt: Date.now() + 12 * 60 * 60 * 1000 });
   return token;
+}
+
+function issueRestaurantTabletSession(restaurantId) {
+  const token = crypto.randomBytes(32).toString("hex");
+  restaurantTabletSessions.set(token, { restaurantId, expiresAt: Date.now() + 8 * 60 * 60 * 1000 });
+  return token;
+}
+
+function requireRestaurantTablet(req, res, next) {
+  const token = String(req.headers.authorization || "").replace(/^Bearer\s+/i, "");
+  const session = restaurantTabletSessions.get(token);
+  if (!session || session.expiresAt < Date.now()) {
+    if (token) restaurantTabletSessions.delete(token);
+    return res.status(401).json({ error: "Tablet login expired. Please log in again." });
+  }
+  const restaurant = restaurantState.restaurants.find((item) => item.id === session.restaurantId);
+  if (!restaurant) return res.status(401).json({ error: "Restaurant tablet account was not found." });
+  req.restaurant = restaurant;
+  req.restaurantTabletToken = token;
+  return next();
 }
 
 function requireRestaurant(req, res, next) {
@@ -1424,6 +1489,101 @@ app.post("/api/admin/restaurants/:id/edit-session", requireRestaurantAdmin, (req
   const restaurant = restaurantState.restaurants.find((item) => item.id === req.params.id);
   if (!restaurant) return res.status(404).json({ error: "Restaurant was not found." });
   res.json({ token: issueRestaurantSession(restaurant.id), restaurant: safeRestaurant(restaurant) });
+});
+
+function publicRestaurantTabletOrder(order) {
+  return {
+    id: order.id,
+    orderNumber: order.orderNumber,
+    customerName: order.customerName || "Customer",
+    items: (order.items || []).map((item) => ({ name: item.name, quantity: item.quantity })),
+    status: order.status,
+    foodSubtotal: Number(order.foodSubtotal || 0),
+    foodTax: Number(order.foodTax || 0),
+    restaurantAmount: Number(order.restaurantAmount || 0),
+    pickupTime: order.pickupTime || "",
+    declineReason: order.declineReason || "",
+    paid: order.paymentStatus === "paid",
+    createdAt: order.createdAt,
+    updatedAt: order.updatedAt,
+  };
+}
+
+function tabletLoginAttemptKey(req, username) {
+  return `${String(req.ip || "unknown")}::${username}`;
+}
+
+app.post("/api/restaurant/tablet-login", (req, res) => {
+  const username = String(req.body.username || "").trim().toLowerCase();
+  const pin = String(req.body.pin || "").trim();
+  const attemptKey = tabletLoginAttemptKey(req, username);
+  const now = Date.now();
+  const attempts = restaurantTabletLoginAttempts.get(attemptKey) || { count: 0, resetAt: now + 15 * 60 * 1000 };
+  if (attempts.resetAt <= now) {
+    attempts.count = 0;
+    attempts.resetAt = now + 15 * 60 * 1000;
+  }
+  if (attempts.count >= 5) {
+    return res.status(429).json({ error: "Too many incorrect attempts. Wait 15 minutes and try again." });
+  }
+  const restaurant = restaurantState.restaurants.find((item) => item.tabletUsername === username);
+  const validFormat = /^\d{6}$/.test(pin);
+  let valid = false;
+  if (restaurant && validFormat && restaurant.tabletPinSalt && restaurant.tabletPinHash) {
+    const attempt = hashRestaurantPassword(pin, restaurant.tabletPinSalt).hash;
+    valid = attempt.length === restaurant.tabletPinHash.length && crypto.timingSafeEqual(Buffer.from(attempt), Buffer.from(restaurant.tabletPinHash));
+  }
+  if (!valid) {
+    attempts.count += 1;
+    restaurantTabletLoginAttempts.set(attemptKey, attempts);
+    return res.status(401).json({ error: "The restaurant username or six-digit tablet PIN is incorrect." });
+  }
+  restaurantTabletLoginAttempts.delete(attemptKey);
+  return res.json({ token: issueRestaurantTabletSession(restaurant.id), restaurant: { id: restaurant.id, storeName: restaurant.storeName } });
+});
+
+app.get("/api/restaurant/tablet/orders", requireRestaurantTablet, (req, res) => {
+  const orders = restaurantOrders
+    .filter((order) => order.restaurantId === req.restaurant.id)
+    .sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
+  res.json({ orders: orders.map(publicRestaurantTabletOrder) });
+});
+
+app.post("/api/restaurant/tablet/orders/:id/status", requireRestaurantTablet, (req, res) => {
+  const order = restaurantOrders.find((entry) => entry.id === req.params.id && entry.restaurantId === req.restaurant.id);
+  if (!order) return res.status(404).json({ error: "Order was not found." });
+  const nextStatus = String(req.body.status || "");
+  if (!['preparing', 'ready', 'cancelled'].includes(nextStatus)) {
+    return res.status(400).json({ error: "This tablet action is not allowed." });
+  }
+  if (nextStatus === "preparing") {
+    const subtotal = Number(req.body.foodSubtotal);
+    const pickupTime = String(req.body.pickupTime || "").trim().slice(0, 80);
+    if (!(subtotal > 0) || subtotal > 5000 || !pickupTime) {
+      return res.status(400).json({ error: "Enter the food subtotal without tax and choose a pickup time." });
+    }
+    order.foodSubtotal = Math.round(subtotal * 100) / 100;
+    order.foodTax = Math.round(order.foodSubtotal * Number(req.restaurant.foodTaxRate || 0) * 100) / 100;
+    order.restaurantAmount = Math.round((order.foodSubtotal + order.foodTax) * 100) / 100;
+    order.pickupTime = pickupTime;
+  }
+  if (nextStatus === "cancelled") {
+    const declineReason = String(req.body.declineReason || "").trim().slice(0, 300);
+    if (!declineReason) return res.status(400).json({ error: "Choose or enter a decline reason." });
+    order.declineReason = declineReason;
+  }
+  if (nextStatus === "ready" && req.body.pickupTime !== undefined) {
+    order.pickupTime = String(req.body.pickupTime || order.pickupTime || "").trim().slice(0, 80);
+  }
+  order.status = nextStatus;
+  order.updatedAt = new Date().toISOString();
+  saveRestaurantOrders();
+  return res.json({ order: publicRestaurantTabletOrder(order) });
+});
+
+app.post("/api/restaurant/tablet/logout", requireRestaurantTablet, (req, res) => {
+  restaurantTabletSessions.delete(req.restaurantTabletToken);
+  res.json({ ok: true });
 });
 
 app.post("/api/restaurant/login", (req, res) => {
