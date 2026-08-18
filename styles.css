@@ -3735,8 +3735,7 @@ input.field-error {
   margin: 8px 0 12px;
 }
 
-.flow-actions,
-.social-login-actions {
+.flow-actions {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 320px));
   justify-content: center;

@@ -308,7 +308,6 @@ const customerVerificationMessage = document.querySelector("#customerVerificatio
 const customerVerificationCode = document.querySelector("#customerVerificationCode");
 const customerLoginStatus = document.querySelector("#customerLoginStatus");
 const saveCustomerLogin = document.querySelector("#saveCustomerLogin");
-const socialLoginButtons = document.querySelectorAll("[data-social-login]");
 const customerLogout = document.querySelector("#customerLogout");
 const customerMenuToggle = document.querySelector("#customerMenuToggle");
 const customerMenuPanel = document.querySelector("#customerMenuPanel");
@@ -7596,12 +7595,6 @@ window.setInterval(() => {
     renderAutoApprovalSettings();
   }
 }, 30 * 1000);
-socialLoginButtons.forEach((button) => {
-  button.addEventListener("click", () => {
-    customerLoginStatus.textContent =
-      "Google, Apple, and Face ID login are ready to connect after the app is live in Supabase Auth.";
-  });
-});
 runDailyUpdateButton?.addEventListener("click", () => renderDailyUpdate(true));
 runCatalogLearningReview?.addEventListener("click", reviewCompletedOrderCatalogLearning);
 document.querySelector("#autoApprovalForm")?.addEventListener("submit", (event) => {
