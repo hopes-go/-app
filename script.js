@@ -329,6 +329,7 @@ const discountLabel = document.querySelector("#discountLabel");
 const discountType = document.querySelector("#discountType");
 const discountAmount = document.querySelector("#discountAmount");
 const checkoutButton = document.querySelector("#checkoutButton");
+const adminTestBanner = document.querySelector("#adminTestBanner");
 const checkoutStatus = document.querySelector("#checkoutStatus");
 const customerFlowStatus = document.querySelector("#customerFlowStatus");
 const requestValidation = document.querySelector("#requestValidation");
@@ -2952,8 +2953,9 @@ function renderMembershipDashboard() {
 function createRequestRecord(payload) {
   const existing = requests.find((request) => request.checkoutKey === getRequestCheckoutKey(payload));
   if (existing) return existing;
+  const isTestOrder = Boolean(payload.testMode || customerTestingMode);
   const request = {
-    id: `REQ-${String(Date.now()).slice(-6)}`,
+    id: `${isTestOrder ? "TEST" : "REQ"}-${String(Date.now()).slice(-6)}`,
     checkoutKey: getRequestCheckoutKey(payload),
     customer: payload.customer.name || "Customer",
     phone: payload.customer.phone || "",
@@ -3005,9 +3007,9 @@ function createRequestRecord(payload) {
     membershipName: payload.membershipName || "",
     createdAt: new Date().toLocaleString(),
     createdAtMs: Date.now(),
-    testMode: Boolean(payload.testMode || customerTestingMode),
-    paymentValidation: payload.testMode || customerTestingMode ? "Test mode - not validated" : "Pending authorization",
-    riskSummary: payload.testMode || customerTestingMode ? "No live Stripe risk check" : "Waiting for Stripe",
+    testMode: isTestOrder,
+    paymentValidation: isTestOrder ? "TEST ORDER - no payment attempted" : "Pending authorization",
+    riskSummary: isTestOrder ? "TEST ORDER - excluded from dispatch" : "Waiting for Stripe",
     paymentMethod: payload.paymentMethod || "stripe",
     externalPaymentConfirmed: Boolean(payload.externalPaymentConfirmed),
     nonPartnerOrderTotal: Number(payload.nonPartnerOrderTotal || 0),
@@ -3016,9 +3018,6 @@ function createRequestRecord(payload) {
   requests.unshift(request);
   saveRequests();
   renderAdminBoards();
-  if (request.testMode) {
-    processAutoApproval(request.id, { valid: false }, { additionalFlags: ["Test-mode payment cannot be validated"] });
-  }
   return request;
 }
 
@@ -3131,7 +3130,7 @@ function resetTestCheckoutState() {
   if (!checkoutButton) return;
   clearEmbeddedCheckout();
   checkoutButton.disabled = false;
-  checkoutButton.textContent = "Continue to secure checkout";
+  checkoutButton.textContent = hasAdminTestingAccess() ? "Create test order - no payment" : "Continue to secure checkout";
 }
 
 async function handleCheckoutReturnStatus() {
@@ -3290,9 +3289,9 @@ async function startMembershipCheckout(planId) {
     membershipCheckoutTitle.textContent = `${plan.name} - ${money(plan.monthlyPrice)} per month`;
   }
 
-  if (customerTestingMode) {
+  if (customerTestingMode || hasAdminTestingAccess()) {
     saveMembership(plan.id);
-    membershipStatus.textContent = `${plan.name} is active for this test account. Benefits apply automatically.`;
+    membershipStatus.textContent = `${plan.name} is active for this admin test only. No membership payment was started.`;
     return;
   }
 
@@ -3360,6 +3359,16 @@ async function startStripeCheckout() {
 
   if (!termsAccepted.checked) {
     checkoutStatus.textContent = "Please accept the Terms of Service and the cancellation/refund policy before checkout.";
+    return;
+  }
+
+  if (hasAdminTestingAccess()) {
+    payload.testMode = true;
+    const request = createRequestRecord(payload);
+    clearSavedRequestDraft();
+    checkoutStatus.textContent = `${request.id} created as a TEST ORDER. No payment was attempted, no alert was sent, and drivers cannot accept it.`;
+    checkoutButton.disabled = true;
+    checkoutButton.textContent = "Test order created - no payment";
     return;
   }
 
@@ -5911,6 +5920,13 @@ function contactHref(type, value) {
 }
 
 function renderDispatchActions(request) {
+  if (request.testMode) {
+    return `
+      <div class="dispatch-actions contact-actions">
+        <span class="dispatch-waiting-note">TEST ORDER ONLY - payment, alerts, and driver dispatch are disabled.</span>
+      </div>
+    `;
+  }
   const isReviewable = request.status === "Admin reviewing";
   const isWaitingOnCustomer = request.status === "Needs customer fix";
 
@@ -5947,10 +5963,10 @@ function renderDispatchRequestCard(request) {
     <details class="alert-card dispatch-request-card">
       <summary class="dispatch-summary">
         <div>
-          <strong>${displayValue(request.id)} - ${displayValue(request.customer, "Customer")}</strong>
+          <strong>${request.testMode ? "TEST ORDER - " : ""}${displayValue(request.id)} - ${displayValue(request.customer, "Customer")}</strong>
           <p>${displayValue(request.items, "No services listed")}</p>
         </div>
-        <span class="pill">${displayValue(request.status, "Status needed")}</span>
+        <span class="pill">${request.testMode ? "TEST ORDER" : displayValue(request.status, "Status needed")}</span>
       </summary>
 
       <div class="dispatch-review-body">
@@ -6373,6 +6389,11 @@ function renderRoleNavigation() {
   ownerSiteSwitcher?.setAttribute("aria-hidden", String(!hasAdminSiteAccess));
   const driverSiteButton = ownerMenuPanel?.querySelector('[data-owner-view="employee"]');
   if (driverSiteButton) driverSiteButton.hidden = currentRole === "admin";
+  const adminTestingCustomerSite = hasAdminTestingAccess() && document.body.dataset.activeView === "storefront";
+  if (adminTestBanner) adminTestBanner.hidden = !adminTestingCustomerSite;
+  if (checkoutButton && !checkoutButton.disabled) {
+    checkoutButton.textContent = adminTestingCustomerSite ? "Create test order - no payment" : "Continue to secure checkout";
+  }
 }
 
 function setAdminPreviewSize(size) {
